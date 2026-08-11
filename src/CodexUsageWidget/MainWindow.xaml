@@ -1,0 +1,102 @@
+<Window x:Class="CodexUsageWidget.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Codex 剩余用量"
+        Width="96"
+        Height="96"
+        MinWidth="96"
+        MinHeight="96"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Loaded="Window_Loaded"
+        Closed="Window_Closed">
+    <Window.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="刷新" Click="Refresh_Click" />
+            <MenuItem Header="设置" Click="Settings_Click" />
+            <Separator />
+            <MenuItem Header="打开官方用量" Click="OfficialUsage_Click" />
+            <MenuItem Header="退出" Click="Exit_Click" />
+        </ContextMenu>
+    </Window.ContextMenu>
+
+    <Border x:Name="Card"
+            Background="Transparent"
+            BorderThickness="0"
+            Padding="0">
+        <Grid>
+            <Grid x:Name="DashboardPanel">
+                <Grid x:Name="WaterBallHost"
+                      Background="Transparent"
+                      MouseLeftButtonDown="Header_MouseLeftButtonDown"
+                      ToolTipService.InitialShowDelay="150"
+                      ToolTipService.ShowDuration="60000"
+                      ToolTipService.BetweenShowDelay="100" />
+            </Grid>
+
+            <Grid x:Name="SettingsPanel" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="28" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="32" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="小工具设置"
+                           Foreground="White"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+                <Grid Grid.Row="1" Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="28" />
+                        <RowDefinition Height="28" />
+                        <RowDefinition Height="28" />
+                        <RowDefinition Height="28" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="周额度（可选 token）"
+                               Foreground="#B9C7D8"
+                               VerticalAlignment="Center" />
+                    <TextBox x:Name="WeeklyBudgetBox" Grid.Column="1" />
+                    <TextBlock Text="刷新间隔（秒）"
+                               Grid.Row="1"
+                               Foreground="#B9C7D8"
+                               VerticalAlignment="Center" />
+                    <TextBox x:Name="RefreshSecondsBox" Grid.Row="1" Grid.Column="1" />
+                    <TextBlock Text="透明度"
+                               Grid.Row="2"
+                               Foreground="#B9C7D8"
+                               VerticalAlignment="Center" />
+                    <Slider x:Name="OpacitySlider"
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            Minimum="45"
+                            Maximum="100"
+                            TickFrequency="5"
+                            IsSnapToTickEnabled="True" />
+                    <CheckBox x:Name="TopmostBox"
+                              Grid.Row="3"
+                              Grid.Column="0"
+                              Content="窗口置顶"
+                              Foreground="White"
+                              VerticalAlignment="Center" />
+                    <CheckBox x:Name="AutoStartBox"
+                              Grid.Row="3"
+                              Grid.Column="1"
+                              Content="开机启动"
+                              Foreground="White"
+                              VerticalAlignment="Center" />
+                </Grid>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="取消" Click="SettingsCancel_Click" />
+                    <Button Content="保存" Click="SettingsSave_Click" Background="#0E7490" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
