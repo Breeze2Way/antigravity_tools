@@ -9,7 +9,7 @@ public sealed class SettingsStoreTests
         var settings = new SettingsStore(temp.Path).Load();
 
         Assert.Equal(0, settings.WeeklyBudgetTokens);
-        Assert.Equal(30, settings.RefreshSeconds);
+        Assert.Equal(120, settings.RefreshSeconds);
         Assert.Equal(0.92, settings.Opacity, precision: 6);
         Assert.True(settings.Topmost);
         Assert.False(settings.AutoStart);
@@ -43,7 +43,7 @@ public sealed class SettingsStoreTests
 
         var loaded = store.Load();
         Assert.Equal(0, loaded.WeeklyBudgetTokens);
-        Assert.Equal(30, loaded.RefreshSeconds);
+        Assert.Equal(120, loaded.RefreshSeconds);
         Assert.Equal(1.0, loaded.Opacity, precision: 6);
         Assert.True(double.IsNaN(loaded.Left));
         Assert.True(double.IsNaN(loaded.Top));

@@ -79,6 +79,39 @@ public sealed class UsageRefreshServiceTests
         Assert.Contains("官方周剩余", state.Status);
     }
 
+    [Fact]
+    public void RetainsLastOfficialPercentWhenLaterReadFails()
+    {
+        var reads = 0;
+        var service = new UsageRefreshService(
+            _ => new DataReadResult([], 0, null),
+            new CodexDataPaths("state.db", "sessions"),
+            () => reads++ == 0 ? 54 : null);
+
+        var first = service.Refresh(Now, new WidgetSettings());
+        var later = service.Refresh(Now.AddMinutes(2), new WidgetSettings());
+
+        Assert.Equal(54, first.OfficialRemainingPercent);
+        Assert.Equal(54, later.OfficialRemainingPercent);
+        Assert.Equal(2, reads);
+    }
+
+    [Fact]
+    public void LocalRefreshUsesCachedOfficialPercentWithoutReadingOfficialUsage()
+    {
+        var reads = 0;
+        var service = new UsageRefreshService(
+            _ => new DataReadResult([], 0, null),
+            new CodexDataPaths("state.db", "sessions"),
+            () => reads++ == 0 ? 54 : throw new InvalidOperationException("official read should be skipped"));
+
+        service.Refresh(Now, new WidgetSettings());
+        var local = service.RefreshLocal(Now.AddMinutes(1), new WidgetSettings());
+
+        Assert.Equal(54, local.OfficialRemainingPercent);
+        Assert.Equal(1, reads);
+    }
+
     private static string UsageJson(DateTimeOffset timestamp, long totalTokens) => JsonSerializer.Serialize(new
     {
         timestamp,

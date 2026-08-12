@@ -9,6 +9,7 @@ public sealed class UsageRefreshService
     private readonly CodexDataPaths paths;
     private readonly Func<double?>? readOfficialRemainingPercent;
     private WidgetViewState? lastSuccessful;
+    private double? lastOfficialRemainingPercent;
 
     public UsageRefreshService(
         CodexDataReader reader,
@@ -28,14 +29,36 @@ public sealed class UsageRefreshService
         this.readOfficialRemainingPercent = readOfficialRemainingPercent;
     }
 
-    public WidgetViewState Refresh(DateTimeOffset now, WidgetSettings settings)
+    public WidgetViewState Refresh(
+        DateTimeOffset now,
+        WidgetSettings settings,
+        bool refreshOfficial = true)
     {
+        var officialRemainingPercent = lastOfficialRemainingPercent;
+        if (refreshOfficial)
+        {
+            try
+            {
+                var currentOfficialRemainingPercent = readOfficialRemainingPercent?.Invoke();
+                if (currentOfficialRemainingPercent.HasValue)
+                {
+                    lastOfficialRemainingPercent = currentOfficialRemainingPercent;
+                    officialRemainingPercent = currentOfficialRemainingPercent;
+                }
+            }
+            catch
+            {
+                // Keep the last successful official value when the UI is unavailable.
+            }
+        }
+
         var result = read(paths);
         if (result.Warning is not null && result.Records.Count == 0 && lastSuccessful is not null)
         {
             return lastSuccessful with
             {
-                Status = $"{result.Warning} · 保留上次数据"
+                Status = $"{result.Warning} · 保留上次数据",
+                OfficialRemainingPercent = officialRemainingPercent
             };
         }
 
@@ -56,16 +79,6 @@ public sealed class UsageRefreshService
             TimeSpan.FromDays(30),
             budgetTokens);
         var status = result.Warning ?? (result.Records.Count == 0 ? "暂无记录 · 本地估算" : "本地估算");
-        double? officialRemainingPercent = null;
-        try
-        {
-            officialRemainingPercent = readOfficialRemainingPercent?.Invoke();
-        }
-        catch
-        {
-            // Local token data remains useful when the desktop UI is unavailable.
-        }
-
         if (officialRemainingPercent.HasValue)
         {
             status = $"官方周剩余 {officialRemainingPercent.Value:0.#}%";
@@ -86,5 +99,10 @@ public sealed class UsageRefreshService
         }
 
         return state;
+    }
+
+    public WidgetViewState RefreshLocal(DateTimeOffset now, WidgetSettings settings)
+    {
+        return Refresh(now, settings, refreshOfficial: false);
     }
 }

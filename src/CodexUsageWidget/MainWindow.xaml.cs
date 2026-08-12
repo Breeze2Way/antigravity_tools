@@ -16,7 +16,9 @@ namespace CodexUsageWidget;
 
 public partial class MainWindow : Window
 {
-    private const double BallWindowSize = 96;
+    private const double BallWindowSize = 68;
+    private const double WaterBallSize = 62;
+    private static readonly TimeSpan LocalRefreshDebounce = TimeSpan.FromMilliseconds(400);
     private const double SettingsWindowWidth = 360;
     private const double SettingsWindowHeight = 245;
     private const string OfficialUsageUrl = "https://chatgpt.com";
@@ -29,15 +31,18 @@ public partial class MainWindow : Window
     private readonly System.Windows.Controls.TextBlock hostDetailsText = CreateDetailsTextBlock();
     private readonly UsageRefreshService refreshService;
     private readonly DispatcherTimer refreshTimer;
+    private readonly DispatcherTimer localRefreshTimer;
+    private readonly UsageFileWatcher usageFileWatcher;
     private Forms.NotifyIcon trayIcon = null!;
     private WidgetSettings settings;
     private bool isRefreshing;
+    private bool localRefreshPending;
 
     public MainWindow()
     {
         InitializeComponent();
-        waterBall.Width = 88;
-        waterBall.Height = 88;
+        waterBall.Width = WaterBallSize;
+        waterBall.Height = WaterBallSize;
         waterBall.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
         waterBall.VerticalAlignment = VerticalAlignment.Center;
         waterBall.SnapsToDevicePixels = true;
@@ -49,12 +54,20 @@ public partial class MainWindow : Window
         WaterBallHost.ToolTip = hostDetailsText;
         WaterBallHost.Children.Add(waterBall);
         settings = settingsStore.Load();
+        var dataPaths = CodexDataPaths.ForCurrentUser();
         refreshService = new UsageRefreshService(
             new CodexDataReader(),
-            CodexDataPaths.ForCurrentUser(),
+            dataPaths,
             officialUsageReader.ReadRemainingPercent);
         refreshTimer = new DispatcherTimer();
         refreshTimer.Tick += RefreshTimer_Tick;
+        localRefreshTimer = new DispatcherTimer
+        {
+            Interval = LocalRefreshDebounce
+        };
+        localRefreshTimer.Tick += LocalRefreshTimer_Tick;
+        usageFileWatcher = new UsageFileWatcher(dataPaths);
+        usageFileWatcher.Changed += UsageFileWatcher_Changed;
         ConfigureWindow();
         ConfigureTrayIcon();
     }
@@ -69,6 +82,8 @@ public partial class MainWindow : Window
     private void Window_Closed(object? sender, EventArgs e)
     {
         refreshTimer.Stop();
+        localRefreshTimer.Stop();
+        usageFileWatcher.Dispose();
         settingsStore.Save(settings with { Left = Left, Top = Top });
         trayIcon.Visible = false;
         trayIcon.Dispose();
@@ -99,19 +114,42 @@ public partial class MainWindow : Window
         refreshTimer.Start();
     }
 
-    private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshAsync();
+    private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshAsync(refreshOfficial: true);
 
-    private async void RefreshAsync()
+    private void UsageFileWatcher_Changed(object? sender, EventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            localRefreshTimer.Stop();
+            localRefreshTimer.Start();
+        });
+    }
+
+    private void LocalRefreshTimer_Tick(object? sender, EventArgs e)
+    {
+        localRefreshTimer.Stop();
+        RefreshAsync(refreshOfficial: false);
+    }
+
+    private async void RefreshAsync(bool refreshOfficial = true)
     {
         if (isRefreshing)
         {
+            if (!refreshOfficial)
+            {
+                localRefreshPending = true;
+            }
+
             return;
         }
 
         isRefreshing = true;
         try
         {
-            var snapshot = await Task.Run(() => refreshService.Refresh(DateTimeOffset.UtcNow, settings));
+            var snapshot = await Task.Run(() => refreshService.Refresh(
+                DateTimeOffset.UtcNow,
+                settings,
+                refreshOfficial));
             ApplySnapshot(snapshot);
         }
         catch (Exception exception)
@@ -121,6 +159,11 @@ public partial class MainWindow : Window
         finally
         {
             isRefreshing = false;
+            if (localRefreshPending)
+            {
+                localRefreshPending = false;
+                RefreshAsync(refreshOfficial: false);
+            }
         }
     }
 
