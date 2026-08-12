@@ -112,6 +112,29 @@ public sealed class UsageRefreshServiceTests
         Assert.Equal(1, reads);
     }
 
+    [Fact]
+    public void IncludesRecentTokenRateForWaterWaveAnimation()
+    {
+        var records = new DataReadResult(
+            [
+                new UsageRecord(
+                    Now.AddMinutes(-1),
+                    new TokenUsage(1_000, 0, 0, 0, 0, 1_000),
+                    "session.jsonl",
+                    "recent",
+                    false)
+            ],
+            0,
+            null);
+        var service = new UsageRefreshService(
+            _ => records,
+            new CodexDataPaths("state.db", "sessions"));
+
+        var state = service.Refresh(Now, new WidgetSettings());
+
+        Assert.Equal(200, state.RecentTokensPerMinute, precision: 6);
+    }
+
     private static string UsageJson(DateTimeOffset timestamp, long totalTokens) => JsonSerializer.Serialize(new
     {
         timestamp,

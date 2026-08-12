@@ -56,4 +56,27 @@ public sealed class WaterBallDisplayTests
     {
         Assert.Equal(expected, WaterBallDisplay.GetCenteredTextOrigin(center, textWidth), precision: 6);
     }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(125000, 0.5)]
+    [InlineData(250000, 1)]
+    [InlineData(500000, 1)]
+    [InlineData(-1, 0)]
+    public void MapsTokenRateToWaveIntensity(double tokensPerMinute, double expected)
+    {
+        Assert.Equal(expected, WaterWaveDisplay.GetIntensity(tokensPerMinute), precision: 6);
+    }
+
+    [Fact]
+    public void FasterTokenRateProducesLargerAndFasterWaves()
+    {
+        var calmAmplitude = WaterWaveDisplay.GetAmplitude(10_000, 31);
+        var fastAmplitude = WaterWaveDisplay.GetAmplitude(220_000, 31);
+        var calmSpeed = WaterWaveDisplay.GetSpeed(10_000);
+        var fastSpeed = WaterWaveDisplay.GetSpeed(220_000);
+
+        Assert.True(fastAmplitude > calmAmplitude);
+        Assert.True(fastSpeed > calmSpeed);
+    }
 }

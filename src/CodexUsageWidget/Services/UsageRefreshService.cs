@@ -53,12 +53,17 @@ public sealed class UsageRefreshService
         }
 
         var result = read(paths);
+        var recentTokensPerMinute = UsageRateCalculator.CalculateTokensPerMinute(
+            result.Records,
+            now,
+            TimeSpan.FromMinutes(5));
         if (result.Warning is not null && result.Records.Count == 0 && lastSuccessful is not null)
         {
             return lastSuccessful with
             {
                 Status = $"{result.Warning} · 保留上次数据",
-                OfficialRemainingPercent = officialRemainingPercent
+                OfficialRemainingPercent = officialRemainingPercent,
+                RecentTokensPerMinute = lastSuccessful.RecentTokensPerMinute
             };
         }
 
@@ -91,7 +96,10 @@ public sealed class UsageRefreshService
             now,
             status,
             IsEstimate: true,
-            OfficialRemainingPercent: officialRemainingPercent);
+            OfficialRemainingPercent: officialRemainingPercent)
+        {
+            RecentTokensPerMinute = recentTokensPerMinute
+        };
 
         if (result.Warning is null)
         {

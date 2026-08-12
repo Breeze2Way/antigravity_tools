@@ -179,6 +179,7 @@ public partial class MainWindow : Window
     {
         var officialText = WaterBallDisplay.FormatCenterText(state.OfficialRemainingPercent);
         waterBall.RemainingPercent = state.OfficialRemainingPercent;
+        waterBall.TokensPerMinute = state.RecentTokensPerMinute;
         waterBall.CenterText = officialText;
         SetDetails(string.Join(
             Environment.NewLine,

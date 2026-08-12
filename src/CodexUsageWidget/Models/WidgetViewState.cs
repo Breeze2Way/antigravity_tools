@@ -7,4 +7,7 @@ public sealed record WidgetViewState(
     DateTimeOffset RefreshedAt,
     string Status,
     bool IsEstimate,
-    double? OfficialRemainingPercent = null);
+    double? OfficialRemainingPercent = null)
+{
+    public double RecentTokensPerMinute { get; init; }
+}

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Media;
@@ -16,6 +17,16 @@ public sealed class WaterBallControl : FrameworkElement
 {
     private double? remainingPercent;
     private string centerText = "--";
+    private double tokensPerMinute;
+    private double wavePhase;
+    private long lastRenderTimestamp;
+    private bool animationAttached;
+
+    public WaterBallControl()
+    {
+        Loaded += Control_Loaded;
+        Unloaded += Control_Unloaded;
+    }
 
     public double? RemainingPercent
     {
@@ -44,6 +55,22 @@ public sealed class WaterBallControl : FrameworkElement
             }
 
             centerText = next;
+            InvalidateVisual();
+        }
+    }
+
+    public double TokensPerMinute
+    {
+        get => tokensPerMinute;
+        set
+        {
+            var next = double.IsFinite(value) ? Math.Max(0, value) : 0;
+            if (Math.Abs(tokensPerMinute - next) < 0.01)
+            {
+                return;
+            }
+
+            tokensPerMinute = next;
             InvalidateVisual();
         }
     }
@@ -79,28 +106,36 @@ public sealed class WaterBallControl : FrameworkElement
         {
             var diameter = radius * 2;
             var waterTop = center.Y + radius - diameter * fillRatio.Value;
-            var waterRect = new Rect(center.X - radius, waterTop, diameter, diameter - Math.Max(0, waterTop - (center.Y + radius)));
+            var waterRect = new Rect(center.X - radius, waterTop, diameter, diameter);
 
             drawingContext.PushClip(bucketGeometry);
             drawingContext.DrawRectangle(waterBrush, null, waterRect);
 
-            var wave = new StreamGeometry();
-            using (var context = wave.Open())
-            {
-                var waveHeight = Math.Min(2.5, radius / 8);
-                context.BeginFigure(new WpfPoint(center.X - radius, waterTop), true, true);
-                context.LineTo(new WpfPoint(center.X - radius + radius * 0.55, waterTop - waveHeight), true, false);
-                context.LineTo(new WpfPoint(center.X - radius + radius * 1.1, waterTop + waveHeight), true, false);
-                context.LineTo(new WpfPoint(center.X + radius, waterTop - waveHeight * 0.35), true, false);
-                context.LineTo(new WpfPoint(center.X + radius, center.Y + radius), true, false);
-                context.LineTo(new WpfPoint(center.X - radius, center.Y + radius), true, false);
-            }
-
+            var amplitude = WaterWaveDisplay.GetAmplitude(tokensPerMinute, radius);
+            var frequency = WaterWaveDisplay.GetFrequency(tokensPerMinute);
+            var wave = CreateWaveGeometry(
+                center,
+                radius,
+                waterTop,
+                amplitude,
+                frequency,
+                wavePhase,
+                amplitudeScale: 1);
             drawingContext.DrawGeometry(waterBrush, null, wave);
-            drawingContext.DrawLine(
+
+            var highlightWave = CreateWaveGeometry(
+                center,
+                radius,
+                waterTop,
+                amplitude,
+                frequency * 1.35,
+                -wavePhase * 0.75 + 1.2,
+                amplitudeScale: 0.32,
+                fill: false);
+            drawingContext.DrawGeometry(
+                null,
                 new MediaPen(waterHighlight, 1.1),
-                new WpfPoint(center.X - radius, waterTop),
-                new WpfPoint(center.X + radius, waterTop));
+                highlightWave);
             drawingContext.Pop();
         }
 
@@ -149,6 +184,91 @@ public sealed class WaterBallControl : FrameworkElement
             center.Y - formattedText.Height / 2);
         drawingContext.DrawText(formattedText, origin);
         drawingContext.DrawEllipse(null, new MediaPen(foreground, 0.8), center, radius - 4, radius - 4);
+    }
+
+    private static StreamGeometry CreateWaveGeometry(
+        WpfPoint center,
+        double radius,
+        double waterTop,
+        double amplitude,
+        double frequency,
+        double phase,
+        double amplitudeScale,
+        bool fill = true)
+    {
+        var left = center.X - radius;
+        var right = center.X + radius;
+        var bottom = center.Y + radius;
+        var segments = 24;
+        var geometry = new StreamGeometry();
+        using var context = geometry.Open();
+        var offset = WaveOffset(0, amplitude, frequency, phase) * amplitudeScale;
+        context.BeginFigure(new WpfPoint(left, waterTop + offset), fill, fill);
+        for (var index = 1; index <= segments; index++)
+        {
+            var normalizedX = index / (double)segments;
+            offset = WaveOffset(normalizedX, amplitude, frequency, phase) * amplitudeScale;
+            context.LineTo(
+                new WpfPoint(left + (right - left) * normalizedX, waterTop + offset),
+                true,
+                false);
+        }
+
+        if (fill)
+        {
+            context.LineTo(new WpfPoint(right, bottom), true, false);
+            context.LineTo(new WpfPoint(left, bottom), true, false);
+        }
+
+        return geometry;
+    }
+
+    private static double WaveOffset(
+        double normalizedX,
+        double amplitude,
+        double frequency,
+        double phase)
+    {
+        var primary = Math.Sin(normalizedX * Math.PI * 2 * frequency + phase);
+        var secondary = Math.Sin(normalizedX * Math.PI * 2 * frequency * 0.47 - phase * 0.63 + 1.1);
+        return primary * amplitude + secondary * amplitude * 0.28;
+    }
+
+    private void Control_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (animationAttached)
+        {
+            return;
+        }
+
+        animationAttached = true;
+        lastRenderTimestamp = Stopwatch.GetTimestamp();
+        CompositionTarget.Rendering += CompositionTarget_Rendering;
+    }
+
+    private void Control_Unloaded(object sender, RoutedEventArgs e)
+    {
+        if (!animationAttached)
+        {
+            return;
+        }
+
+        animationAttached = false;
+        CompositionTarget.Rendering -= CompositionTarget_Rendering;
+    }
+
+    private void CompositionTarget_Rendering(object? sender, EventArgs e)
+    {
+        var timestamp = Stopwatch.GetTimestamp();
+        var elapsed = (timestamp - lastRenderTimestamp) / (double)Stopwatch.Frequency;
+        lastRenderTimestamp = timestamp;
+        if (!double.IsFinite(elapsed) || elapsed <= 0)
+        {
+            return;
+        }
+
+        wavePhase += WaterWaveDisplay.GetSpeed(tokensPerMinute) * Math.Min(elapsed, 0.1);
+        InvalidateVisual();
     }
 
     private sealed class WaterBallAutomationPeer : FrameworkElementAutomationPeer
