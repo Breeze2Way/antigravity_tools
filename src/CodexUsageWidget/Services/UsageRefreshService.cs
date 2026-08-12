@@ -7,15 +7,24 @@ public sealed class UsageRefreshService
 {
     private readonly Func<CodexDataPaths, DataReadResult> read;
     private readonly CodexDataPaths paths;
-    private readonly Func<double?>? readOfficialRemainingPercent;
+    private readonly Func<OfficialUsageSnapshot?>? readOfficialUsage;
     private WidgetViewState? lastSuccessful;
     private double? lastOfficialRemainingPercent;
+    private DateTimeOffset? lastResetAt;
 
     public UsageRefreshService(
         CodexDataReader reader,
         CodexDataPaths paths,
         Func<double?>? readOfficialRemainingPercent = null)
-        : this(reader.Read, paths, readOfficialRemainingPercent)
+        : this(reader.Read, paths, AdaptOfficialPercentReader(readOfficialRemainingPercent))
+    {
+    }
+
+    public UsageRefreshService(
+        CodexDataReader reader,
+        CodexDataPaths paths,
+        Func<OfficialUsageSnapshot?>? readOfficialUsage)
+        : this(reader.Read, paths, readOfficialUsage)
     {
     }
 
@@ -23,10 +32,18 @@ public sealed class UsageRefreshService
         Func<CodexDataPaths, DataReadResult> read,
         CodexDataPaths paths,
         Func<double?>? readOfficialRemainingPercent = null)
+        : this(read, paths, AdaptOfficialPercentReader(readOfficialRemainingPercent))
+    {
+    }
+
+    public UsageRefreshService(
+        Func<CodexDataPaths, DataReadResult> read,
+        CodexDataPaths paths,
+        Func<OfficialUsageSnapshot?>? readOfficialUsage)
     {
         this.read = read;
         this.paths = paths;
-        this.readOfficialRemainingPercent = readOfficialRemainingPercent;
+        this.readOfficialUsage = readOfficialUsage;
     }
 
     public WidgetViewState Refresh(
@@ -35,15 +52,25 @@ public sealed class UsageRefreshService
         bool refreshOfficial = true)
     {
         var officialRemainingPercent = lastOfficialRemainingPercent;
+        var resetAt = lastResetAt;
         if (refreshOfficial)
         {
             try
             {
-                var currentOfficialRemainingPercent = readOfficialRemainingPercent?.Invoke();
-                if (currentOfficialRemainingPercent.HasValue)
+                var currentOfficialUsage = readOfficialUsage?.Invoke();
+                if (currentOfficialUsage is not null)
                 {
-                    lastOfficialRemainingPercent = currentOfficialRemainingPercent;
-                    officialRemainingPercent = currentOfficialRemainingPercent;
+                    if (currentOfficialUsage.RemainingPercent.HasValue)
+                    {
+                        lastOfficialRemainingPercent = currentOfficialUsage.RemainingPercent;
+                        officialRemainingPercent = currentOfficialUsage.RemainingPercent;
+                    }
+
+                    if (currentOfficialUsage.ResetAfter.HasValue)
+                    {
+                        lastResetAt = now + currentOfficialUsage.ResetAfter.Value;
+                        resetAt = lastResetAt;
+                    }
                 }
             }
             catch
@@ -63,6 +90,7 @@ public sealed class UsageRefreshService
             {
                 Status = $"{result.Warning} · 保留上次数据",
                 OfficialRemainingPercent = officialRemainingPercent,
+                ResetAt = resetAt,
                 RecentTokensPerMinute = lastSuccessful.RecentTokensPerMinute
             };
         }
@@ -98,6 +126,7 @@ public sealed class UsageRefreshService
             IsEstimate: true,
             OfficialRemainingPercent: officialRemainingPercent)
         {
+            ResetAt = resetAt,
             RecentTokensPerMinute = recentTokensPerMinute
         };
 
@@ -112,5 +141,19 @@ public sealed class UsageRefreshService
     public WidgetViewState RefreshLocal(DateTimeOffset now, WidgetSettings settings)
     {
         return Refresh(now, settings, refreshOfficial: false);
+    }
+
+    private static Func<OfficialUsageSnapshot?>? AdaptOfficialPercentReader(
+        Func<double?>? readOfficialRemainingPercent)
+    {
+        if (readOfficialRemainingPercent is null)
+        {
+            return null;
+        }
+
+        return ()
+            => readOfficialRemainingPercent() is { } percentage
+                ? new OfficialUsageSnapshot(percentage, null)
+                : null;
     }
 }

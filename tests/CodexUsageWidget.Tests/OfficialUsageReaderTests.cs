@@ -36,4 +36,24 @@ public sealed class OfficialUsageReaderTests
     {
         Assert.False(OfficialUsageReader.TryParsePercentage(text, out _));
     }
+
+    [Theory]
+    [InlineData("重置时间：2小时30分钟", 150)]
+    [InlineData("Resets in 1h 15m", 75)]
+    [InlineData("45分钟后重置", 45)]
+    [InlineData("1天2小时", 1_560)]
+    public void ParsesResetCountdown(string text, double expectedMinutes)
+    {
+        Assert.True(OfficialUsageReader.TryParseResetAfter(text, out var resetAfter));
+        Assert.Equal(expectedMinutes, resetAfter.TotalMinutes, precision: 6);
+    }
+
+    [Theory]
+    [InlineData("重置时间")]
+    [InlineData("54%")]
+    [InlineData("")]
+    public void RejectsTextWithoutResetCountdown(string text)
+    {
+        Assert.False(OfficialUsageReader.TryParseResetAfter(text, out _));
+    }
 }

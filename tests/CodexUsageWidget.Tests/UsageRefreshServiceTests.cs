@@ -135,6 +135,25 @@ public sealed class UsageRefreshServiceTests
         Assert.Equal(200, state.RecentTokensPerMinute, precision: 6);
     }
 
+    [Fact]
+    public void CachesOfficialResetTimeWhenLaterReadFails()
+    {
+        var reads = 0;
+        var service = new UsageRefreshService(
+            _ => new DataReadResult([], 0, null),
+            new CodexDataPaths("state.db", "sessions"),
+            () => reads++ == 0
+                ? new OfficialUsageSnapshot(54, TimeSpan.FromHours(2.5))
+                : null);
+
+        var first = service.Refresh(Now, new WidgetSettings());
+        var later = service.Refresh(Now.AddMinutes(2), new WidgetSettings());
+
+        Assert.Equal(Now.AddHours(2.5), first.ResetAt);
+        Assert.Equal(first.ResetAt, later.ResetAt);
+        Assert.Equal(2, reads);
+    }
+
     private static string UsageJson(DateTimeOffset timestamp, long totalTokens) => JsonSerializer.Serialize(new
     {
         timestamp,

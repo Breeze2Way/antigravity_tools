@@ -19,17 +19,25 @@ public sealed class OfficialUsageReader
     private static readonly Regex StandalonePercentageRegex = new(
         @"^\s*(?<value>\d{1,3}(?:[.,]\d+)?)\s*%\s*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex ResetDurationPartRegex = new(
+        @"(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>天|d|day|days|小时|小時|时|時|h|hr|hrs|hour|hours|分钟|分鐘|分|m|min|mins|minute|minutes)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public double? ReadRemainingPercent()
+    {
+        return ReadUsage()?.RemainingPercent;
+    }
+
+    public OfficialUsageSnapshot? ReadUsage()
     {
         foreach (var process in GetChatGptProcesses())
         {
             try
             {
-                var percent = ReadFromProcess(process);
-                if (percent.HasValue)
+                var usage = ReadFromProcess(process);
+                if (usage is not null && usage.RemainingPercent.HasValue)
                 {
-                    return percent;
+                    return usage;
                 }
             }
             catch (Exception exception) when (IsExpectedUiAutomationException(exception))
@@ -111,7 +119,7 @@ public sealed class OfficialUsageReader
         }
     }
 
-    private static double? ReadFromProcess(Process process)
+    private static OfficialUsageSnapshot? ReadFromProcess(Process process)
     {
         var root = AutomationElement.RootElement;
         var processCondition = new PropertyCondition(
@@ -168,7 +176,7 @@ public sealed class OfficialUsageReader
                     continue;
                 }
 
-                return percentage;
+                return new OfficialUsageSnapshot(percentage, FindResetAfter(window));
             }
             finally
             {
@@ -240,6 +248,56 @@ public sealed class OfficialUsageReader
         return null;
     }
 
+    public static bool TryParseResetAfter(string? text, out TimeSpan resetAfter)
+    {
+        resetAfter = default;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        var days = 0d;
+        var hours = 0d;
+        var minutes = 0d;
+        var foundPart = false;
+        foreach (Match match in ResetDurationPartRegex.Matches(text))
+        {
+            foundPart = true;
+            var valueText = match.Groups["value"].Value.Replace(',', '.');
+            if (!double.TryParse(valueText, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value))
+            {
+                continue;
+            }
+
+            var unit = match.Groups["unit"].Value.ToLowerInvariant();
+            if (unit is "天" or "d" or "day" or "days")
+            {
+                days += value;
+            }
+            else if (unit is "小时" or "小時" or "时" or "時" or "h" or "hr" or "hrs" or "hour" or "hours")
+            {
+                hours += value;
+            }
+            else
+            {
+                minutes += value;
+            }
+        }
+
+        if (!foundPart)
+        {
+            return false;
+        }
+
+        if (days <= 0 && hours <= 0 && minutes <= 0)
+        {
+            return false;
+        }
+
+        resetAfter = TimeSpan.FromMinutes(days * 1_440 + hours * 60 + minutes);
+        return resetAfter >= TimeSpan.Zero;
+    }
+
     private static double? FindPercentage(AutomationElement window)
     {
         var menu = FindUsageMenu(window);
@@ -256,6 +314,32 @@ public sealed class OfficialUsageReader
                 if (TryParsePercentage(descendants[index].Current.Name, out var percentage))
                 {
                     return percentage;
+                }
+            }
+        }
+        catch (Exception exception) when (IsExpectedUiAutomationException(exception))
+        {
+        }
+
+        return null;
+    }
+
+    private static TimeSpan? FindResetAfter(AutomationElement window)
+    {
+        var menu = FindUsageMenu(window);
+        if (menu is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var descendants = menu.FindAll(TreeScope.Descendants, Condition.TrueCondition);
+            for (var index = 0; index < descendants.Count; index++)
+            {
+                if (TryParseResetAfter(descendants[index].Current.Name, out var resetAfter))
+                {
+                    return resetAfter;
                 }
             }
         }

@@ -3,8 +3,10 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using Forms = System.Windows.Forms;
@@ -35,12 +37,15 @@ public partial class MainWindow : Window
     private readonly UsageRefreshService refreshService;
     private readonly DispatcherTimer refreshTimer;
     private readonly DispatcherTimer localRefreshTimer;
+    private readonly DispatcherTimer resetCountdownTimer;
     private readonly UsageFileWatcher usageFileWatcher;
     private readonly CancellationTokenSource shutdownCancellation = new();
     private Forms.NotifyIcon trayIcon = null!;
     private WidgetSettings settings;
     private bool isRefreshing;
     private bool localRefreshPending;
+    private WidgetViewState? lastState;
+    private string? lastDetails;
     private System.Windows.Point? dashboardPosition;
     private volatile bool officialRefreshSuspended;
 
@@ -72,6 +77,11 @@ public partial class MainWindow : Window
             Interval = LocalRefreshDebounce
         };
         localRefreshTimer.Tick += LocalRefreshTimer_Tick;
+        resetCountdownTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(30)
+        };
+        resetCountdownTimer.Tick += ResetCountdownTimer_Tick;
         usageFileWatcher = new UsageFileWatcher(dataPaths);
         usageFileWatcher.Changed += UsageFileWatcher_Changed;
         ConfigureWindow();
@@ -82,6 +92,7 @@ public partial class MainWindow : Window
     {
         PositionWindow();
         ConfigureRefreshTimer();
+        resetCountdownTimer.Start();
         RefreshAsync();
     }
 
@@ -89,6 +100,7 @@ public partial class MainWindow : Window
     {
         refreshTimer.Stop();
         localRefreshTimer.Stop();
+        resetCountdownTimer.Stop();
         shutdownCancellation.Cancel();
         usageFileWatcher.Dispose();
         var savedPosition = dashboardPosition ?? new System.Windows.Point(Left, Top);
@@ -177,6 +189,7 @@ public partial class MainWindow : Window
 
     private void ApplySnapshot(WidgetViewState state)
     {
+        lastState = state;
         var officialText = WaterBallDisplay.FormatCenterText(state.OfficialRemainingPercent);
         waterBall.RemainingPercent = state.OfficialRemainingPercent;
         waterBall.TokensPerMinute = state.RecentTokensPerMinute;
@@ -192,8 +205,37 @@ public partial class MainWindow : Window
 
     private void SetDetails(string details)
     {
-        ballDetailsText.Text = details;
-        hostDetailsText.Text = details;
+        lastDetails = details;
+        ApplyTooltipDetails(
+            details,
+            UsageDisplayFormatter.FormatResetDetails(lastState?.ResetAt, DateTimeOffset.Now));
+    }
+
+    private void ResetCountdownTimer_Tick(object? sender, EventArgs e)
+    {
+        if (lastDetails is not null)
+        {
+            ApplyTooltipDetails(
+                lastDetails,
+                UsageDisplayFormatter.FormatResetDetails(lastState?.ResetAt, DateTimeOffset.Now));
+        }
+    }
+
+    private void ApplyTooltipDetails(string details, string? resetDetails)
+    {
+        foreach (var textBlock in new[] { ballDetailsText, hostDetailsText })
+        {
+            textBlock.Inlines.Clear();
+            textBlock.Inlines.Add(new Run(details));
+            if (resetDetails is not null)
+            {
+                textBlock.Inlines.Add(new Run(Environment.NewLine + resetDetails)
+                {
+                    Foreground = System.Windows.Media.Brushes.IndianRed,
+                    FontWeight = System.Windows.FontWeights.SemiBold
+                });
+            }
+        }
     }
 
     private static System.Windows.Controls.TextBlock CreateDetailsTextBlock()
@@ -225,7 +267,7 @@ public partial class MainWindow : Window
         Header_MouseLeftButtonDown(sender, e);
     }
 
-    private double? ReadOfficialUsageIfSafe()
+    private OfficialUsageSnapshot? ReadOfficialUsageIfSafe()
     {
         if (officialRefreshSuspended ||
             !userActivityMonitor.WaitForQuietPeriod(shutdownCancellation.Token) ||
@@ -235,7 +277,7 @@ public partial class MainWindow : Window
             return null;
         }
 
-        return officialUsageReader.ReadRemainingPercent();
+        return officialUsageReader.ReadUsage();
     }
 
     private System.Windows.Rect GetCurrentWorkArea()

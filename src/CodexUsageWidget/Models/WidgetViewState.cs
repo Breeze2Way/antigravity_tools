@@ -9,5 +9,6 @@ public sealed record WidgetViewState(
     bool IsEstimate,
     double? OfficialRemainingPercent = null)
 {
+    public DateTimeOffset? ResetAt { get; init; }
     public double RecentTokensPerMinute { get; init; }
 }
