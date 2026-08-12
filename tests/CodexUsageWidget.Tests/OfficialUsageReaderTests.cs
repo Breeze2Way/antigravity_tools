@@ -48,6 +48,15 @@ public sealed class OfficialUsageReaderTests
         Assert.Equal(expectedMinutes, resetAfter.TotalMinutes, precision: 6);
     }
 
+    [Fact]
+    public void ParsesChineseResetDateAsCountdown()
+    {
+        var now = new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.FromHours(8));
+
+        Assert.True(OfficialUsageReader.TryParseResetAfter("8月18日", now, out var resetAfter));
+        Assert.Equal(132, resetAfter.TotalHours, precision: 6);
+    }
+
     [Theory]
     [InlineData("重置时间")]
     [InlineData("54%")]

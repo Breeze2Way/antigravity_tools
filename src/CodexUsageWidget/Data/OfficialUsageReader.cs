@@ -22,6 +22,9 @@ public sealed class OfficialUsageReader
     private static readonly Regex ResetDurationPartRegex = new(
         @"(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>天|d|day|days|小时|小時|时|時|h|hr|hrs|hour|hours|分钟|分鐘|分|m|min|mins|minute|minutes)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    private static readonly Regex ResetDateRegex = new(
+        @"(?<month>\d{1,2})\s*月\s*(?<day>\d{1,2})\s*日?",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public double? ReadRemainingPercent()
     {
@@ -176,7 +179,7 @@ public sealed class OfficialUsageReader
                     continue;
                 }
 
-                return new OfficialUsageSnapshot(percentage, FindResetAfter(window));
+                return new OfficialUsageSnapshot(percentage, FindResetAfter(window, DateTimeOffset.Now));
             }
             finally
             {
@@ -298,6 +301,48 @@ public sealed class OfficialUsageReader
         return resetAfter >= TimeSpan.Zero;
     }
 
+    public static bool TryParseResetAfter(string? text, DateTimeOffset now, out TimeSpan resetAfter)
+    {
+        if (TryParseResetAfter(text, out resetAfter))
+        {
+            return true;
+        }
+
+        var match = ResetDateRegex.Match(text ?? string.Empty);
+        if (!match.Success ||
+            !int.TryParse(match.Groups["month"].Value, out var month) ||
+            !int.TryParse(match.Groups["day"].Value, out var day))
+        {
+            resetAfter = default;
+            return false;
+        }
+
+        DateTimeOffset resetAt;
+        try
+        {
+            resetAt = new DateTimeOffset(
+                now.Year,
+                month,
+                day,
+                0,
+                0,
+                0,
+                now.Offset);
+            if (resetAt <= now)
+            {
+                resetAt = resetAt.AddYears(1);
+            }
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            resetAfter = default;
+            return false;
+        }
+
+        resetAfter = resetAt - now;
+        return resetAfter > TimeSpan.Zero;
+    }
+
     private static double? FindPercentage(AutomationElement window)
     {
         var menu = FindUsageMenu(window);
@@ -324,7 +369,7 @@ public sealed class OfficialUsageReader
         return null;
     }
 
-    private static TimeSpan? FindResetAfter(AutomationElement window)
+    private static TimeSpan? FindResetAfter(AutomationElement window, DateTimeOffset now)
     {
         var menu = FindUsageMenu(window);
         if (menu is null)
@@ -337,7 +382,7 @@ public sealed class OfficialUsageReader
             var descendants = menu.FindAll(TreeScope.Descendants, Condition.TrueCondition);
             for (var index = 0; index < descendants.Count; index++)
             {
-                if (TryParseResetAfter(descendants[index].Current.Name, out var resetAfter))
+                if (TryParseResetAfter(descendants[index].Current.Name, now, out var resetAfter))
                 {
                     return resetAfter;
                 }
