@@ -96,7 +96,7 @@ public sealed class WaterBallControl : FrameworkElement
         var color = WaterBallDisplay.GetColor(remainingPercent);
         var waterBrush = new SolidColorBrush(ToMediaColor(color));
         var waterHighlight = new SolidColorBrush(Lighten(color, 0.35));
-        var bucketBrush = new SolidColorBrush(MediaColor.FromRgb(18, 32, 49));
+        var bucketBrush = new SolidColorBrush(ToMediaColor(WaterBallDisplay.GetBackgroundColor(remainingPercent)));
         var rimBrush = new SolidColorBrush(Lighten(color, 0.55));
 
         drawingContext.DrawEllipse(bucketBrush, new MediaPen(rimBrush, 2), center, radius, radius);

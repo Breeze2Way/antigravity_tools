@@ -11,6 +11,7 @@ public static class WaterBallDisplay
     private static readonly WaterBallColor YellowColor = new(250, 204, 21);
     private static readonly WaterBallColor BlueColor = new(59, 130, 246);
     private static readonly WaterBallColor GreenColor = new(34, 197, 94);
+    private static readonly WaterBallColor BucketBaseColor = new(18, 32, 49);
 
     public static double? GetFillRatio(double? remainingPercent)
     {
@@ -54,6 +55,11 @@ public static class WaterBallDisplay
             <= 60 => Interpolate(YellowColor, BlueColor, (percent - 20) / 40),
             _ => Interpolate(BlueColor, GreenColor, (percent - 60) / 40)
         };
+    }
+
+    public static WaterBallColor GetBackgroundColor(double? remainingPercent)
+    {
+        return Interpolate(GetColor(remainingPercent), BucketBaseColor, 0.72);
     }
 
     public static double GetCenteredTextOrigin(double center, double textWidth)

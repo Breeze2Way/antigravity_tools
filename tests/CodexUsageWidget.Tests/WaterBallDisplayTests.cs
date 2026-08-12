@@ -44,6 +44,15 @@ public sealed class WaterBallDisplayTests
     }
 
     [Fact]
+    public void UsesDifferentTintedBackgroundColorsAtFortyAndSixtyPercent()
+    {
+        var atForty = WaterBallDisplay.GetBackgroundColor(40);
+        var atSixty = WaterBallDisplay.GetBackgroundColor(60);
+
+        Assert.NotEqual(atForty, atSixty);
+    }
+
+    [Fact]
     public void UsesNeutralColorWhenOfficialPercentageIsUnavailable()
     {
         Assert.Equal(new WaterBallColor(128, 140, 153), WaterBallDisplay.GetColor(null));
