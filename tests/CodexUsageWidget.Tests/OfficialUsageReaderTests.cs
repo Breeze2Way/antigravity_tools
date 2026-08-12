@@ -2,6 +2,22 @@ namespace CodexUsageWidget.Tests;
 
 public sealed class OfficialUsageReaderTests
 {
+    [Fact]
+    public void RetriesUiReadUntilAValueIsAvailable()
+    {
+        var attempts = 0;
+        var waits = 0;
+
+        var result = OfficialUsageReader.WaitUntil(
+            () => ++attempts >= 3,
+            maxAttempts: 4,
+            wait: () => waits++);
+
+        Assert.True(result);
+        Assert.Equal(3, attempts);
+        Assert.Equal(2, waits);
+    }
+
     [Theory]
     [InlineData("54%", 54)]
     [InlineData("  37.5% ", 37.5)]

@@ -17,8 +17,8 @@ namespace CodexUsageWidget;
 public partial class MainWindow : Window
 {
     private const double BallWindowSize = 96;
-    private const double SettingsWindowWidth = 320;
-    private const double SettingsWindowHeight = 205;
+    private const double SettingsWindowWidth = 360;
+    private const double SettingsWindowHeight = 245;
     private const string OfficialUsageUrl = "https://chatgpt.com";
     private const string StartupValueName = "CodexUsageWidget";
 
@@ -170,13 +170,33 @@ public partial class MainWindow : Window
             Visible = true
         };
 
-        var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("刷新", null, (_, _) => Dispatcher.Invoke(RefreshAsync));
-        menu.Items.Add("设置", null, (_, _) => Dispatcher.Invoke(ShowSettings));
-        menu.Items.Add("打开官方用量", null, (_, _) => Dispatcher.Invoke(OpenOfficialUsage));
-        menu.Items.Add("退出", null, (_, _) => Dispatcher.Invoke(Close));
+        var menu = new Forms.ContextMenuStrip
+        {
+            AutoSize = true,
+            Padding = new Forms.Padding(4),
+            ShowCheckMargin = false,
+            ShowImageMargin = false,
+            Font = new System.Drawing.Font("Microsoft YaHei UI", 9F)
+        };
+        AddTrayMenuItem(menu, "刷新", (_, _) => Dispatcher.Invoke(RefreshAsync));
+        AddTrayMenuItem(menu, "设置", (_, _) => Dispatcher.Invoke(ShowSettings));
+        AddTrayMenuItem(menu, "打开官方用量", (_, _) => Dispatcher.Invoke(OpenOfficialUsage));
+        AddTrayMenuItem(menu, "退出", (_, _) => Dispatcher.Invoke(Close));
         trayIcon.ContextMenuStrip = menu;
         trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowDashboard);
+    }
+
+    private static void AddTrayMenuItem(
+        Forms.ContextMenuStrip menu,
+        string text,
+        EventHandler click)
+    {
+        var item = new Forms.ToolStripMenuItem(text)
+        {
+            Padding = new Forms.Padding(8, 4, 8, 4)
+        };
+        item.Click += click;
+        menu.Items.Add(item);
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => RefreshAsync();

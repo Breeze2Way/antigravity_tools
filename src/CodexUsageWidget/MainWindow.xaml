@@ -14,12 +14,15 @@
         Loaded="Window_Loaded"
         Closed="Window_Closed">
     <Window.ContextMenu>
-        <ContextMenu>
-            <MenuItem Header="刷新" Click="Refresh_Click" />
-            <MenuItem Header="设置" Click="Settings_Click" />
+        <ContextMenu MinWidth="170"
+                     Padding="4"
+                     FontSize="13"
+                     HasDropShadow="True">
+            <MenuItem Header="刷新" Click="Refresh_Click" Padding="10,6" />
+            <MenuItem Header="设置" Click="Settings_Click" Padding="10,6" />
             <Separator />
-            <MenuItem Header="打开官方用量" Click="OfficialUsage_Click" />
-            <MenuItem Header="退出" Click="Exit_Click" />
+            <MenuItem Header="打开官方用量" Click="OfficialUsage_Click" Padding="10,6" />
+            <MenuItem Header="退出" Click="Exit_Click" Padding="10,6" />
         </ContextMenu>
     </Window.ContextMenu>
 
@@ -37,37 +40,37 @@
                       ToolTipService.BetweenShowDelay="100" />
             </Grid>
 
-            <Grid x:Name="SettingsPanel" Visibility="Collapsed">
+            <Grid x:Name="SettingsPanel" Visibility="Collapsed" Margin="12,8,12,8">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="28" />
+                    <RowDefinition Height="30" />
                     <RowDefinition Height="*" />
-                    <RowDefinition Height="32" />
+                    <RowDefinition Height="36" />
                 </Grid.RowDefinitions>
                 <TextBlock Text="小工具设置"
                            Foreground="White"
                            FontSize="16"
                            FontWeight="SemiBold"
                            VerticalAlignment="Center" />
-                <Grid Grid.Row="1" Margin="0,8,0,0">
+                <Grid Grid.Row="1" Margin="0,10,0,0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="28" />
-                        <RowDefinition Height="28" />
-                        <RowDefinition Height="28" />
-                        <RowDefinition Height="28" />
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="32" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="110" />
+                        <ColumnDefinition Width="130" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="周额度（可选 token）"
                                Foreground="#B9C7D8"
                                VerticalAlignment="Center" />
-                    <TextBox x:Name="WeeklyBudgetBox" Grid.Column="1" />
+                    <TextBox x:Name="WeeklyBudgetBox" Grid.Column="1" Margin="8,0,0,0" />
                     <TextBlock Text="刷新间隔（秒）"
                                Grid.Row="1"
                                Foreground="#B9C7D8"
                                VerticalAlignment="Center" />
-                    <TextBox x:Name="RefreshSecondsBox" Grid.Row="1" Grid.Column="1" />
+                    <TextBox x:Name="RefreshSecondsBox" Grid.Row="1" Grid.Column="1" Margin="8,0,0,0" />
                     <TextBlock Text="透明度"
                                Grid.Row="2"
                                Foreground="#B9C7D8"
@@ -75,6 +78,7 @@
                     <Slider x:Name="OpacitySlider"
                             Grid.Row="2"
                             Grid.Column="1"
+                            Margin="8,0,0,0"
                             Minimum="45"
                             Maximum="100"
                             TickFrequency="5"
@@ -92,9 +96,12 @@
                               Foreground="White"
                               VerticalAlignment="Center" />
                 </Grid>
-                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="取消" Click="SettingsCancel_Click" />
-                    <Button Content="保存" Click="SettingsSave_Click" Background="#0E7490" />
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <Button Content="取消" Click="SettingsCancel_Click" Padding="12,4" />
+                    <Button Content="保存" Click="SettingsSave_Click" Padding="12,4" Margin="8,0,0,0" Background="#0E7490" />
                 </StackPanel>
             </Grid>
         </Grid>

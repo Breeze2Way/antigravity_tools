@@ -14,6 +14,8 @@ public sealed class OfficialUsageReader
     private const string ProcessName = "ChatGPT";
     private const string ProfileMenuName = "打开个人资料菜单";
     private const string RemainingUsageName = "剩余用量";
+    private const int UiReadAttempts = 20;
+    private static readonly TimeSpan UiPollInterval = TimeSpan.FromMilliseconds(100);
     private static readonly Regex StandalonePercentageRegex = new(
         @"^\s*(?<value>\d{1,3}(?:[.,]\d+)?)\s*%\s*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -74,6 +76,29 @@ public sealed class OfficialUsageReader
         return true;
     }
 
+    internal static bool WaitUntil(Func<bool> condition, int maxAttempts, Action wait)
+    {
+        if (maxAttempts <= 0)
+        {
+            return false;
+        }
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            if (condition())
+            {
+                return true;
+            }
+
+            if (attempt + 1 < maxAttempts)
+            {
+                wait();
+            }
+        }
+
+        return false;
+    }
+
     private static IEnumerable<Process> GetChatGptProcesses()
     {
         try
@@ -97,18 +122,34 @@ public sealed class OfficialUsageReader
         for (var index = 0; index < windows.Count; index++)
         {
             var window = windows[index];
-            var profileButton = FindDescendantByName(window, ProfileMenuName);
+            AutomationElement? profileButton = null;
+            WaitUntil(
+                () => (profileButton = FindDescendantByName(window, ProfileMenuName)) is not null,
+                UiReadAttempts,
+                () => Thread.Sleep(UiPollInterval));
             if (profileButton is null)
             {
                 continue;
             }
 
             Expand(profileButton);
-            Thread.Sleep(300);
 
             try
             {
-                var remainingUsage = FindDescendantByName(window, RemainingUsageName);
+                AutomationElement? remainingUsage = null;
+                WaitUntil(
+                    () => (remainingUsage = FindVisibleDescendantByName(window, RemainingUsageName)) is not null,
+                    UiReadAttempts,
+                    () => Thread.Sleep(UiPollInterval));
+                if (remainingUsage is null)
+                {
+                    TryReopen(window, profileButton);
+                    WaitUntil(
+                        () => (remainingUsage = FindVisibleDescendantByName(window, RemainingUsageName)) is not null,
+                        UiReadAttempts,
+                        () => Thread.Sleep(UiPollInterval));
+                }
+
                 if (remainingUsage is null ||
                     !remainingUsage.TryGetCurrentPattern(InvokePattern.Pattern, out var invokePattern))
                 {
@@ -116,19 +157,18 @@ public sealed class OfficialUsageReader
                 }
 
                 ((InvokePattern)invokePattern).Invoke();
-                Thread.Sleep(400);
 
-                var usageMenu = FindUsageMenu(window);
-                if (usageMenu is null)
+                double? percentage = null;
+                WaitUntil(
+                    () => (percentage = FindPercentage(window)) is not null,
+                    UiReadAttempts,
+                    () => Thread.Sleep(UiPollInterval));
+                if (!percentage.HasValue)
                 {
                     continue;
                 }
 
-                var percentage = FindPercentage(usageMenu);
-                if (percentage.HasValue)
-                {
-                    return percentage;
-                }
+                return percentage;
             }
             finally
             {
@@ -177,31 +217,50 @@ public sealed class OfficialUsageReader
 
     private static AutomationElement? FindUsageMenu(AutomationElement window)
     {
-        var menus = window.FindAll(
-            TreeScope.Descendants,
-            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Menu));
-
-        for (var index = 0; index < menus.Count; index++)
+        try
         {
-            var menu = menus[index];
-            if (menu.Current.Name.Contains(ProfileMenuName, StringComparison.Ordinal))
+            var menus = window.FindAll(
+                TreeScope.Descendants,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Menu));
+
+            for (var index = 0; index < menus.Count; index++)
             {
-                return menu;
+                var menu = menus[index];
+                if (!menu.Current.IsOffscreen &&
+                    menu.Current.Name.Contains(ProfileMenuName, StringComparison.Ordinal))
+                {
+                    return menu;
+                }
             }
+        }
+        catch (Exception exception) when (IsExpectedUiAutomationException(exception))
+        {
         }
 
         return null;
     }
 
-    private static double? FindPercentage(AutomationElement menu)
+    private static double? FindPercentage(AutomationElement window)
     {
-        var descendants = menu.FindAll(TreeScope.Descendants, Condition.TrueCondition);
-        for (var index = 0; index < descendants.Count; index++)
+        var menu = FindUsageMenu(window);
+        if (menu is null)
         {
-            if (TryParsePercentage(descendants[index].Current.Name, out var percentage))
+            return null;
+        }
+
+        try
+        {
+            var descendants = menu.FindAll(TreeScope.Descendants, Condition.TrueCondition);
+            for (var index = 0; index < descendants.Count; index++)
             {
-                return percentage;
+                if (TryParsePercentage(descendants[index].Current.Name, out var percentage))
+                {
+                    return percentage;
+                }
             }
+        }
+        catch (Exception exception) when (IsExpectedUiAutomationException(exception))
+        {
         }
 
         return null;
@@ -209,9 +268,66 @@ public sealed class OfficialUsageReader
 
     private static AutomationElement? FindDescendantByName(AutomationElement root, string name)
     {
-        return root.FindFirst(
-            TreeScope.Descendants,
-            new PropertyCondition(AutomationElement.NameProperty, name));
+        try
+        {
+            return root.FindFirst(
+                TreeScope.Descendants,
+                new PropertyCondition(AutomationElement.NameProperty, name));
+        }
+        catch (Exception exception) when (IsExpectedUiAutomationException(exception))
+        {
+            return null;
+        }
+    }
+
+    private static AutomationElement? FindVisibleDescendantByName(AutomationElement root, string name)
+    {
+        var element = FindDescendantByName(root, name);
+        if (element is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return element.Current.IsOffscreen ? null : element;
+        }
+        catch (Exception exception) when (IsExpectedUiAutomationException(exception))
+        {
+            return null;
+        }
+    }
+
+    private static bool TryInvoke(AutomationElement element)
+    {
+        try
+        {
+            if (!element.TryGetCurrentPattern(InvokePattern.Pattern, out var invokePattern))
+            {
+                return false;
+            }
+
+            ((InvokePattern)invokePattern).Invoke();
+            return true;
+        }
+        catch (Exception exception) when (IsExpectedUiAutomationException(exception))
+        {
+            return false;
+        }
+    }
+
+    private static bool TryReopen(AutomationElement window, AutomationElement profileButton)
+    {
+        try
+        {
+            TryCollapse(window, profileButton);
+            Expand(profileButton);
+            return true;
+        }
+        catch (Exception exception) when (IsExpectedUiAutomationException(exception))
+        {
+            return false;
+        }
     }
 
     private static void TryCollapse(AutomationElement window, AutomationElement profileButton)
@@ -220,6 +336,11 @@ public sealed class OfficialUsageReader
         {
             try
             {
+                if (FindUsageMenu(window) is null)
+                {
+                    return;
+                }
+
                 if (!profileButton.TryGetCurrentPattern(
                         ExpandCollapsePattern.Pattern,
                         out var expandCollapsePattern))
@@ -228,14 +349,12 @@ public sealed class OfficialUsageReader
                 }
 
                 var pattern = (ExpandCollapsePattern)expandCollapsePattern;
-                if (pattern.Current.ExpandCollapseState == ExpandCollapseState.Collapsed)
-                {
-                    return;
-                }
-
                 try
                 {
-                    pattern.Collapse();
+                    if (pattern.Current.ExpandCollapseState != ExpandCollapseState.Collapsed)
+                    {
+                        pattern.Collapse();
+                    }
                 }
                 catch (InvalidOperationException)
                 {
@@ -249,6 +368,11 @@ public sealed class OfficialUsageReader
             }
 
             Thread.Sleep(250);
+
+            if (FindUsageMenu(window) is null)
+            {
+                return;
+            }
         }
 
         // Chromium sometimes reports ExpandCollapsePattern.Collapse as
@@ -257,6 +381,10 @@ public sealed class OfficialUsageReader
         // sends the close click directly to the owning window without moving
         // the user's mouse.
         TryClickProfileButton(window, profileButton);
+        WaitUntil(
+            () => FindUsageMenu(window) is null,
+            UiReadAttempts,
+            () => Thread.Sleep(UiPollInterval));
     }
 
     private static void TryClickProfileButton(AutomationElement window, AutomationElement profileButton)
