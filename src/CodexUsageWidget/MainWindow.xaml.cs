@@ -194,13 +194,11 @@ public partial class MainWindow : Window
         waterBall.RemainingPercent = state.OfficialRemainingPercent;
         waterBall.TokensPerMinute = state.RecentTokensPerMinute;
         waterBall.CenterText = officialText;
-        SetDetails(string.Join(
-            Environment.NewLine,
-            $"周剩余：{officialText}",
-            $"近 7 天总量：{UsageDisplayFormatter.FormatMillions(state.SevenDay.Usage.TotalTokens)}",
-            $"近 30 天总量：{UsageDisplayFormatter.FormatMillions(state.ThirtyDay.Usage.TotalTokens)}",
-            $"状态：{state.Status}",
-            $"更新时间：{state.RefreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}"));
+        SetDetails(UsageDisplayFormatter.FormatTooltipDetails(
+            officialText,
+            state.SevenDay.Usage.TotalTokens,
+            state.ThirtyDay.Usage.TotalTokens,
+            state.RefreshedAt));
     }
 
     private void SetDetails(string details)

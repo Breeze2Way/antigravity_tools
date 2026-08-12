@@ -16,6 +16,21 @@ public sealed class UsageDisplayFormatterTests
     }
 
     [Fact]
+    public void FormatsTooltipDetailsWithoutRedundantStatusLine()
+    {
+        var details = UsageDisplayFormatter.FormatTooltipDetails(
+            "54%",
+            sevenDayTokens: 1_000_000,
+            thirtyDayTokens: 2_000_000,
+            refreshedAt: new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.Zero));
+
+        Assert.Contains("周剩余：54%", details);
+        Assert.Contains("近 7 天总量：1.0M", details);
+        Assert.Contains("近 30 天总量：2.0M", details);
+        Assert.DoesNotContain("状态：", details);
+    }
+
+    [Fact]
     public void FormatsResetTimeWithRemainingHours()
     {
         var now = new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.Zero);

@@ -10,6 +10,20 @@ public static class UsageDisplayFormatter
         return $"{millions.ToString("0.0", CultureInfo.InvariantCulture)}M";
     }
 
+    public static string FormatTooltipDetails(
+        string officialText,
+        long sevenDayTokens,
+        long thirtyDayTokens,
+        DateTimeOffset refreshedAt)
+    {
+        return string.Join(
+            Environment.NewLine,
+            $"周剩余：{officialText}",
+            $"近 7 天总量：{FormatMillions(sevenDayTokens)}",
+            $"近 30 天总量：{FormatMillions(thirtyDayTokens)}",
+            $"更新时间：{refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+    }
+
     public static string FormatRemainingPercent(double percent, bool hasBudget)
     {
         if (!hasBudget || !double.IsFinite(percent))
