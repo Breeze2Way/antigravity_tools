@@ -30,4 +30,26 @@ public sealed class UserActivityMonitorTests
             lastInputTick: uint.MaxValue - 500,
             pauseMilliseconds: 1_000));
     }
+
+    [Fact]
+    public void ReportsRemainingQuietTimeBeforeOfficialRead()
+    {
+        Assert.Equal(
+            3_500u,
+            UserActivityMonitor.GetRemainingQuietMilliseconds(
+                currentTick: 10_000,
+                lastInputTick: 8_500,
+                quietMilliseconds: 5_000));
+    }
+
+    [Fact]
+    public void ReportsNoDelayAfterContinuousQuietPeriod()
+    {
+        Assert.Equal(
+            0u,
+            UserActivityMonitor.GetRemainingQuietMilliseconds(
+                currentTick: 10_000,
+                lastInputTick: 4_500,
+                quietMilliseconds: 5_000));
+    }
 }

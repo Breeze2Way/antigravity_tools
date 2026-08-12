@@ -36,6 +36,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer refreshTimer;
     private readonly DispatcherTimer localRefreshTimer;
     private readonly UsageFileWatcher usageFileWatcher;
+    private readonly CancellationTokenSource shutdownCancellation = new();
     private Forms.NotifyIcon trayIcon = null!;
     private WidgetSettings settings;
     private bool isRefreshing;
@@ -88,6 +89,7 @@ public partial class MainWindow : Window
     {
         refreshTimer.Stop();
         localRefreshTimer.Stop();
+        shutdownCancellation.Cancel();
         usageFileWatcher.Dispose();
         var savedPosition = dashboardPosition ?? new System.Windows.Point(Left, Top);
         settingsStore.Save(settings with { Left = savedPosition.X, Top = savedPosition.Y });
@@ -224,7 +226,10 @@ public partial class MainWindow : Window
 
     private double? ReadOfficialUsageIfSafe()
     {
-        if (officialRefreshSuspended || userActivityMonitor.IsUserActive())
+        if (officialRefreshSuspended ||
+            !userActivityMonitor.WaitForQuietPeriod(shutdownCancellation.Token) ||
+            officialRefreshSuspended ||
+            userActivityMonitor.IsUserActive())
         {
             return null;
         }

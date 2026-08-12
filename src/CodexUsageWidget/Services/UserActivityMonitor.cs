@@ -4,7 +4,8 @@ namespace CodexUsageWidget.Services;
 
 public sealed class UserActivityMonitor
 {
-    private const uint DefaultPauseMilliseconds = 2_000;
+    private const uint DefaultPauseMilliseconds = 5_000;
+    private const uint PollMilliseconds = 200;
     private readonly uint pauseMilliseconds;
 
     public UserActivityMonitor(TimeSpan? pauseWindow = null)
@@ -16,11 +17,38 @@ public sealed class UserActivityMonitor
     public bool IsUserActive()
     {
         var lastInputTick = GetLastInputTick();
-        return lastInputTick.HasValue &&
-            IsWithinPauseWindow(
+        return lastInputTick.HasValue && GetRemainingQuietMilliseconds(
+            unchecked((uint)Environment.TickCount),
+            lastInputTick.Value,
+            pauseMilliseconds) > 0;
+    }
+
+    public bool WaitForQuietPeriod(CancellationToken cancellationToken = default)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var lastInputTick = GetLastInputTick();
+            if (!lastInputTick.HasValue)
+            {
+                return true;
+            }
+
+            var remaining = GetRemainingQuietMilliseconds(
                 unchecked((uint)Environment.TickCount),
                 lastInputTick.Value,
                 pauseMilliseconds);
+            if (remaining == 0)
+            {
+                return true;
+            }
+
+            var waitMilliseconds = (int)Math.Min(remaining, PollMilliseconds);
+            if (cancellationToken.WaitHandle.WaitOne(waitMilliseconds))
+            {
+                return false;
+            }
+        }
     }
 
     public static bool IsWithinPauseWindow(
@@ -28,7 +56,16 @@ public sealed class UserActivityMonitor
         uint lastInputTick,
         uint pauseMilliseconds)
     {
-        return unchecked(currentTick - lastInputTick) < pauseMilliseconds;
+        return GetRemainingQuietMilliseconds(currentTick, lastInputTick, pauseMilliseconds) > 0;
+    }
+
+    internal static uint GetRemainingQuietMilliseconds(
+        uint currentTick,
+        uint lastInputTick,
+        uint quietMilliseconds)
+    {
+        var elapsed = unchecked(currentTick - lastInputTick);
+        return elapsed >= quietMilliseconds ? 0 : quietMilliseconds - elapsed;
     }
 
     private static uint? GetLastInputTick()
