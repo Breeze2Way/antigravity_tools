@@ -15,17 +15,38 @@ namespace CodexUsageWidget.Controls;
 
 public sealed class WaterBallControl : FrameworkElement
 {
+    private static readonly (double X, double Y, double Size)[] BubbleLayout =
+    [
+        (-0.28, 0.18, 1.2),
+        (0.24, 0.28, 1.8),
+        (-0.10, 0.42, 1.0),
+        (0.35, 0.55, 1.3),
+        (-0.34, 0.64, 1.5)
+    ];
+
     private double? remainingPercent;
     private string centerText = "--";
     private double tokensPerMinute;
     private double wavePhase;
+    private double animationTime;
     private long lastRenderTimestamp;
     private bool animationAttached;
+    private bool isHovered;
 
     public WaterBallControl()
     {
         Loaded += Control_Loaded;
         Unloaded += Control_Unloaded;
+        MouseEnter += (_, _) =>
+        {
+            isHovered = true;
+            InvalidateVisual();
+        };
+        MouseLeave += (_, _) =>
+        {
+            isHovered = false;
+            InvalidateVisual();
+        };
     }
 
     public double? RemainingPercent
@@ -94,12 +115,34 @@ public sealed class WaterBallControl : FrameworkElement
         var radius = Math.Max(0, size / 2 - 3);
         var bucketGeometry = new EllipseGeometry(center, radius, radius);
         var color = WaterBallDisplay.GetColor(remainingPercent);
+        var glowOpacity = WaterBallEffects.GetGlowOpacity(remainingPercent, tokensPerMinute, isHovered);
+        var alertPulse = WaterBallEffects.GetAlertPulse(remainingPercent, animationTime * 0.35);
+        var shellOpacity = WaterBallEffects.GetShellOpacity(remainingPercent, isHovered);
         var waterBrush = new SolidColorBrush(ToMediaColor(color));
         var waterHighlight = new SolidColorBrush(Lighten(color, 0.35));
-        var bucketBrush = new SolidColorBrush(ToMediaColor(WaterBallDisplay.GetBackgroundColor(remainingPercent)));
         var rimBrush = new SolidColorBrush(Lighten(color, 0.55));
+        var shellBrush = new SolidColorBrush(
+            ToMediaColor(WaterBallDisplay.GetBackgroundColor(remainingPercent), shellOpacity));
+        var glowBrush = new SolidColorBrush(ToMediaColor(color, glowOpacity + alertPulse * 0.08));
 
-        drawingContext.DrawEllipse(bucketBrush, new MediaPen(rimBrush, 2), center, radius, radius);
+        drawingContext.DrawEllipse(glowBrush, null, center, radius + 2.5, radius + 2.5);
+        drawingContext.DrawEllipse(
+            shellBrush,
+            new MediaPen(
+                rimBrush,
+                WaterBallEffects.GetAlertRingThickness(remainingPercent, animationTime * 0.35)),
+            center,
+            radius,
+            radius);
+
+        var reflectionBrush = new SolidColorBrush(
+            MediaColor.FromArgb((byte)(isHovered ? 54 : 34), 255, 255, 255));
+        drawingContext.DrawEllipse(
+            reflectionBrush,
+            null,
+            new WpfPoint(center.X - radius * 0.32, center.Y - radius * 0.34),
+            radius * 0.17,
+            radius * 0.08);
 
         var fillRatio = WaterBallDisplay.GetFillRatio(remainingPercent);
         if (fillRatio.HasValue && radius > 0)
@@ -136,6 +179,55 @@ public sealed class WaterBallControl : FrameworkElement
                 null,
                 new MediaPen(waterHighlight, 1.1),
                 highlightWave);
+
+            var waterlineHighlight = new SolidColorBrush(
+                MediaColor.FromArgb(72, 255, 255, 255));
+            var softHighlightWave = CreateWaveGeometry(
+                center,
+                radius,
+                waterTop - 0.6,
+                amplitude,
+                frequency * 0.82,
+                wavePhase * 0.55 + 0.7,
+                amplitudeScale: 0.52,
+                fill: false);
+            drawingContext.DrawGeometry(
+                null,
+                new MediaPen(waterlineHighlight, 0.75),
+                softHighlightWave);
+
+            var usageFactor = Math.Clamp(tokensPerMinute / 220_000d, 0, 1);
+            for (var index = 0; index < BubbleLayout.Length; index++)
+            {
+                var bubble = BubbleLayout[index];
+                var visibility = WaterBallEffects.GetBubbleVisibility(
+                    remainingPercent,
+                    tokensPerMinute,
+                    index,
+                    animationTime);
+                if (visibility <= 0)
+                {
+                    continue;
+                }
+
+                var rise = (animationTime * (0.08 + usageFactor * 0.16) + index * 0.23) % 0.72;
+                var bubbleCenter = new WpfPoint(
+                    center.X + bubble.X * radius,
+                    center.Y + radius - (0.25 + ((bubble.Y + rise) % 0.72)) * radius * 1.5);
+                var bubbleBrush = new SolidColorBrush(
+                    MediaColor.FromArgb(
+                        (byte)Math.Round(Math.Clamp(visibility * 0.55, 0, 1) * 255),
+                        255,
+                        255,
+                        255));
+                drawingContext.DrawEllipse(
+                    null,
+                    new MediaPen(bubbleBrush, 0.75),
+                    bubbleCenter,
+                    bubble.Size,
+                    bubble.Size);
+            }
+
             drawingContext.Pop();
         }
 
@@ -145,6 +237,15 @@ public sealed class WaterBallControl : FrameworkElement
     private static MediaColor ToMediaColor(WaterBallColor color)
     {
         return MediaColor.FromRgb(color.Red, color.Green, color.Blue);
+    }
+
+    private static MediaColor ToMediaColor(WaterBallColor color, double opacity)
+    {
+        return MediaColor.FromArgb(
+            (byte)Math.Round(Math.Clamp(opacity, 0, 1) * 255, MidpointRounding.AwayFromZero),
+            color.Red,
+            color.Green,
+            color.Blue);
     }
 
     private static MediaColor Lighten(WaterBallColor color, double amount)
@@ -267,7 +368,9 @@ public sealed class WaterBallControl : FrameworkElement
             return;
         }
 
-        wavePhase += WaterWaveDisplay.GetSpeed(tokensPerMinute) * Math.Min(elapsed, 0.1);
+        var frameSeconds = Math.Min(elapsed, 0.1);
+        animationTime += frameSeconds;
+        wavePhase += WaterWaveDisplay.GetSpeed(tokensPerMinute) * frameSeconds;
         InvalidateVisual();
     }
 

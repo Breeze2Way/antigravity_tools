@@ -241,7 +241,8 @@ public partial class MainWindow : Window
         return new System.Windows.Controls.TextBlock
         {
             TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 260
+            MaxWidth = 280,
+            Margin = new Thickness(0)
         };
     }
 
