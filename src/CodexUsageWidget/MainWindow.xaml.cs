@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using Forms = System.Windows.Forms;
@@ -21,11 +22,13 @@ public partial class MainWindow : Window
     private static readonly TimeSpan LocalRefreshDebounce = TimeSpan.FromMilliseconds(400);
     private const double SettingsWindowWidth = 360;
     private const double SettingsWindowHeight = 245;
+    private const double SettingsWindowGap = 12;
     private const string OfficialUsageUrl = "https://chatgpt.com";
     private const string StartupValueName = "CodexUsageWidget";
 
     private readonly SettingsStore settingsStore = new();
     private readonly OfficialUsageReader officialUsageReader = new();
+    private readonly UserActivityMonitor userActivityMonitor = new();
     private readonly WaterBallControl waterBall = new();
     private readonly System.Windows.Controls.TextBlock ballDetailsText = CreateDetailsTextBlock();
     private readonly System.Windows.Controls.TextBlock hostDetailsText = CreateDetailsTextBlock();
@@ -37,6 +40,8 @@ public partial class MainWindow : Window
     private WidgetSettings settings;
     private bool isRefreshing;
     private bool localRefreshPending;
+    private System.Windows.Point? dashboardPosition;
+    private volatile bool officialRefreshSuspended;
 
     public MainWindow()
     {
@@ -58,7 +63,7 @@ public partial class MainWindow : Window
         refreshService = new UsageRefreshService(
             new CodexDataReader(),
             dataPaths,
-            officialUsageReader.ReadRemainingPercent);
+            ReadOfficialUsageIfSafe);
         refreshTimer = new DispatcherTimer();
         refreshTimer.Tick += RefreshTimer_Tick;
         localRefreshTimer = new DispatcherTimer
@@ -84,7 +89,8 @@ public partial class MainWindow : Window
         refreshTimer.Stop();
         localRefreshTimer.Stop();
         usageFileWatcher.Dispose();
-        settingsStore.Save(settings with { Left = Left, Top = Top });
+        var savedPosition = dashboardPosition ?? new System.Windows.Point(Left, Top);
+        settingsStore.Save(settings with { Left = savedPosition.X, Top = savedPosition.Y });
         trayIcon.Visible = false;
         trayIcon.Dispose();
     }
@@ -200,8 +206,55 @@ public partial class MainWindow : Window
     {
         if (e.ChangedButton == MouseButton.Left)
         {
-            DragMove();
+            try
+            {
+                DragMove();
+            }
+            catch (InvalidOperationException)
+            {
+                // The window can close while a drag starts.
+            }
         }
+    }
+
+    private void SettingsHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        Header_MouseLeftButtonDown(sender, e);
+    }
+
+    private double? ReadOfficialUsageIfSafe()
+    {
+        if (officialRefreshSuspended || userActivityMonitor.IsUserActive())
+        {
+            return null;
+        }
+
+        return officialUsageReader.ReadRemainingPercent();
+    }
+
+    private System.Windows.Rect GetCurrentWorkArea()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        if (handle == IntPtr.Zero)
+        {
+            return SystemParameters.WorkArea;
+        }
+
+        var workArea = Forms.Screen.FromHandle(handle).WorkingArea;
+        var source = PresentationSource.FromVisual(this);
+        if (source?.CompositionTarget is null)
+        {
+            return new System.Windows.Rect(
+                workArea.Left,
+                workArea.Top,
+                workArea.Width,
+                workArea.Height);
+        }
+
+        var transform = source.CompositionTarget.TransformFromDevice;
+        var topLeft = transform.Transform(new System.Windows.Point(workArea.Left, workArea.Top));
+        var bottomRight = transform.Transform(new System.Windows.Point(workArea.Right, workArea.Bottom));
+        return new System.Windows.Rect(topLeft, bottomRight);
     }
 
     private void ConfigureTrayIcon()
@@ -248,8 +301,27 @@ public partial class MainWindow : Window
 
     private void ShowSettings()
     {
+        if (SettingsPanel.Visibility != Visibility.Visible)
+        {
+            dashboardPosition = new System.Windows.Point(Left, Top);
+        }
+
+        var anchorBounds = new System.Windows.Rect(
+            dashboardPosition?.X ?? Left,
+            dashboardPosition?.Y ?? Top,
+            BallWindowSize,
+            BallWindowSize);
+        var settingsPosition = WindowPlacementCalculator.CalculateSettingsPosition(
+            anchorBounds,
+            new System.Windows.Size(SettingsWindowWidth, SettingsWindowHeight),
+            GetCurrentWorkArea(),
+            SettingsWindowGap);
+
         Width = SettingsWindowWidth;
         Height = SettingsWindowHeight;
+        Left = settingsPosition.X;
+        Top = settingsPosition.Y;
+        officialRefreshSuspended = true;
         WeeklyBudgetBox.Text = settings.WeeklyBudgetConfigured
             ? settings.WeeklyBudgetTokens.ToString(CultureInfo.InvariantCulture)
             : string.Empty;
@@ -263,10 +335,17 @@ public partial class MainWindow : Window
 
     private void ShowDashboard()
     {
+        officialRefreshSuspended = false;
         SettingsPanel.Visibility = Visibility.Collapsed;
         DashboardPanel.Visibility = Visibility.Visible;
         Width = BallWindowSize;
         Height = BallWindowSize;
+        if (dashboardPosition is { } position)
+        {
+            Left = position.X;
+            Top = position.Y;
+            dashboardPosition = null;
+        }
     }
 
     private void SettingsCancel_Click(object sender, RoutedEventArgs e) => ShowDashboard();

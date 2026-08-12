@@ -46,6 +46,10 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="36" />
                 </Grid.RowDefinitions>
+                <Grid Grid.Row="0"
+                      Background="Transparent"
+                      Cursor="SizeAll"
+                      MouseLeftButtonDown="SettingsHeader_MouseLeftButtonDown" />
                 <TextBlock Text="小工具设置"
                            Foreground="White"
                            FontSize="16"
