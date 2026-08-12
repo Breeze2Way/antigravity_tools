@@ -22,7 +22,7 @@ public sealed class UsageDisplayFormatterTests
         var resetAt = now.AddHours(2.5);
 
         Assert.Equal(
-            "重置时间：2026-08-12 14:30 [剩余 2.5 小时]",
+            "重置时间：2026-08-12 14:30 [剩余 2h]",
             UsageDisplayFormatter.FormatResetDetails(resetAt, now));
     }
 

@@ -28,8 +28,8 @@ public static class UsageDisplayFormatter
         }
 
         var remaining = resetAt.Value - now;
-        var remainingHours = Math.Max(0, remaining.TotalHours);
+        var remainingHours = Math.Max(0, Math.Floor(remaining.TotalHours));
         var localResetAt = resetAt.Value.ToOffset(now.Offset);
-        return $"重置时间：{localResetAt:yyyy-MM-dd HH:mm} [剩余 {remainingHours.ToString("0.0", CultureInfo.InvariantCulture)} 小时]";
+        return $"重置时间：{localResetAt:yyyy-MM-dd HH:mm} [剩余 {remainingHours.ToString("0", CultureInfo.InvariantCulture)}h]";
     }
 }
