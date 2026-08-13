@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Media;
+using System.Windows.Threading;
 using CodexUsageWidget.Services;
 using MediaBrush = System.Windows.Media.Brush;
 using MediaBrushes = System.Windows.Media.Brushes;
@@ -30,6 +31,7 @@ public sealed class WaterBallControl : FrameworkElement
     private double wavePhase;
     private double animationTime;
     private long lastRenderTimestamp;
+    private readonly DispatcherTimer animationTimer;
     private bool animationAttached;
     private bool isHovered;
 
@@ -37,14 +39,38 @@ public sealed class WaterBallControl : FrameworkElement
     {
         Loaded += Control_Loaded;
         Unloaded += Control_Unloaded;
+        animationTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = WaterBallAnimationPolicy.GetInterval(null, 0, false)
+        };
+        animationTimer.Tick += AnimationTimer_Tick;
+        IsVisibleChanged += (_, _) =>
+        {
+            if (!animationAttached)
+            {
+                return;
+            }
+
+            if (IsVisible)
+            {
+                lastRenderTimestamp = Stopwatch.GetTimestamp();
+                animationTimer.Start();
+            }
+            else
+            {
+                animationTimer.Stop();
+            }
+        };
         MouseEnter += (_, _) =>
         {
             isHovered = true;
+            UpdateAnimationInterval();
             InvalidateVisual();
         };
         MouseLeave += (_, _) =>
         {
             isHovered = false;
+            UpdateAnimationInterval();
             InvalidateVisual();
         };
     }
@@ -60,6 +86,7 @@ public sealed class WaterBallControl : FrameworkElement
             }
 
             remainingPercent = value;
+            UpdateAnimationInterval();
             InvalidateVisual();
         }
     }
@@ -92,6 +119,7 @@ public sealed class WaterBallControl : FrameworkElement
             }
 
             tokensPerMinute = next;
+            UpdateAnimationInterval();
             InvalidateVisual();
         }
     }
@@ -343,8 +371,12 @@ public sealed class WaterBallControl : FrameworkElement
         }
 
         animationAttached = true;
+        UpdateAnimationInterval();
         lastRenderTimestamp = Stopwatch.GetTimestamp();
-        CompositionTarget.Rendering += CompositionTarget_Rendering;
+        if (IsVisible)
+        {
+            animationTimer.Start();
+        }
     }
 
     private void Control_Unloaded(object sender, RoutedEventArgs e)
@@ -355,11 +387,16 @@ public sealed class WaterBallControl : FrameworkElement
         }
 
         animationAttached = false;
-        CompositionTarget.Rendering -= CompositionTarget_Rendering;
+        animationTimer.Stop();
     }
 
-    private void CompositionTarget_Rendering(object? sender, EventArgs e)
+    private void AnimationTimer_Tick(object? sender, EventArgs e)
     {
+        if (!IsVisible || Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
         var timestamp = Stopwatch.GetTimestamp();
         var elapsed = (timestamp - lastRenderTimestamp) / (double)Stopwatch.Frequency;
         lastRenderTimestamp = timestamp;
@@ -372,6 +409,14 @@ public sealed class WaterBallControl : FrameworkElement
         animationTime += frameSeconds;
         wavePhase += WaterWaveDisplay.GetSpeed(tokensPerMinute) * frameSeconds;
         InvalidateVisual();
+    }
+
+    private void UpdateAnimationInterval()
+    {
+        animationTimer.Interval = WaterBallAnimationPolicy.GetInterval(
+            remainingPercent,
+            tokensPerMinute,
+            isHovered);
     }
 
     private sealed class WaterBallAutomationPeer : FrameworkElementAutomationPeer
