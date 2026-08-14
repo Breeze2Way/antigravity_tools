@@ -117,15 +117,25 @@ public partial class MainWindow : Window
 
     private void PositionWindow()
     {
+        var workArea = GetCurrentWorkArea();
+        var windowSize = new System.Windows.Size(BallWindowSize, BallWindowSize);
         if (double.IsFinite(settings.Left) && double.IsFinite(settings.Top))
         {
-            Left = settings.Left;
-            Top = settings.Top;
+            var savedPosition = WindowPlacementCalculator.ClampInsideWorkArea(
+                new System.Windows.Point(settings.Left, settings.Top),
+                windowSize,
+                workArea);
+            Left = savedPosition.X;
+            Top = savedPosition.Y;
             return;
         }
 
-        Left = SystemParameters.WorkArea.Right - Width - 24;
-        Top = SystemParameters.WorkArea.Top + 24;
+        var defaultPosition = WindowPlacementCalculator.ClampInsideWorkArea(
+            new System.Windows.Point(workArea.Right - BallWindowSize - 24, workArea.Top + 24),
+            windowSize,
+            workArea);
+        Left = defaultPosition.X;
+        Top = defaultPosition.Y;
     }
 
     private void ConfigureRefreshTimer()

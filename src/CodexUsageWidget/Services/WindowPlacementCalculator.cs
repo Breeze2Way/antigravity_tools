@@ -33,7 +33,19 @@ public static class WindowPlacementCalculator
         var rightSpace = workArea.Right - anchorBounds.Right;
         var leftSpace = anchorBounds.Left - workArea.Left;
         var fallback = rightSpace >= leftSpace ? candidates[0] : candidates[1];
-        return Clamp(fallback, settingsSize, workArea);
+        return ClampInsideWorkArea(fallback, settingsSize, workArea);
+    }
+
+    public static WpfPoint ClampInsideWorkArea(
+        WpfPoint position,
+        WpfSize size,
+        WpfRect workArea)
+    {
+        var maxX = Math.Max(workArea.Left, workArea.Right - size.Width);
+        var maxY = Math.Max(workArea.Top, workArea.Bottom - size.Height);
+        return new WpfPoint(
+            Math.Clamp(position.X, workArea.Left, maxX),
+            Math.Clamp(position.Y, workArea.Top, maxY));
     }
 
     private static bool Fits(WpfPoint position, WpfSize size, WpfRect workArea)
@@ -44,12 +56,4 @@ public static class WindowPlacementCalculator
             position.Y + size.Height <= workArea.Bottom;
     }
 
-    private static WpfPoint Clamp(WpfPoint position, WpfSize size, WpfRect workArea)
-    {
-        var maxX = Math.Max(workArea.Left, workArea.Right - size.Width);
-        var maxY = Math.Max(workArea.Top, workArea.Bottom - size.Height);
-        return new WpfPoint(
-            Math.Clamp(position.X, workArea.Left, maxX),
-            Math.Clamp(position.Y, workArea.Top, maxY));
-    }
 }

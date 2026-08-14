@@ -50,4 +50,16 @@ public sealed class WindowPlacementCalculatorTests
         Assert.Equal(smallWorkArea.Left, position.X);
         Assert.Equal(smallWorkArea.Top, position.Y);
     }
+
+    [Fact]
+    public void ClampsSavedBallPositionInsideWorkArea()
+    {
+        var position = WindowPlacementCalculator.ClampInsideWorkArea(
+            new Point(-694, 54),
+            new Size(68, 68),
+            WorkArea);
+
+        Assert.Equal(WorkArea.Left, position.X);
+        Assert.Equal(54, position.Y);
+    }
 }
