@@ -27,6 +27,13 @@ public sealed class OfficialUsageReaderTests
         Assert.Equal(expected, percentage, precision: 6);
     }
 
+    [Fact]
+    public void ParsesPercentageFromCurrentUsageMenuLabel()
+    {
+        Assert.True(OfficialUsageReader.TryParsePercentage("使用情况 剩余 78%", out var percentage));
+        Assert.Equal(78, percentage, precision: 6);
+    }
+
     [Theory]
     [InlineData("剩余 54%")]
     [InlineData("54")]

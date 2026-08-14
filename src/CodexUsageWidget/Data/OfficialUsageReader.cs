@@ -19,6 +19,9 @@ public sealed class OfficialUsageReader
     private static readonly Regex StandalonePercentageRegex = new(
         @"^\s*(?<value>\d{1,3}(?:[.,]\d+)?)\s*%\s*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex UsageMenuPercentageRegex = new(
+        @"^\s*(?:使用情况|usage)\s*[:：]?\s*(?:剩余|remaining)\s*(?<value>\d{1,3}(?:[.,]\d+)?)\s*%\s*$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly Regex ResetDurationPartRegex = new(
         @"(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>天|d|day|days|小时|小時|时|時|h|hr|hrs|hour|hours|分钟|分鐘|分|m|min|mins|minute|minutes)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -65,6 +68,10 @@ public sealed class OfficialUsageReader
         }
 
         var match = StandalonePercentageRegex.Match(text);
+        if (!match.Success)
+        {
+            match = UsageMenuPercentageRegex.Match(text);
+        }
         if (!match.Success)
         {
             return false;
@@ -147,33 +154,40 @@ public sealed class OfficialUsageReader
 
             try
             {
-                AutomationElement? remainingUsage = null;
-                WaitUntil(
-                    () => (remainingUsage = FindVisibleDescendantByName(window, RemainingUsageName)) is not null,
-                    UiReadAttempts,
-                    () => Thread.Sleep(UiPollInterval));
-                if (remainingUsage is null)
-                {
-                    TryReopen(window, profileButton);
-                    WaitUntil(
-                        () => (remainingUsage = FindVisibleDescendantByName(window, RemainingUsageName)) is not null,
-                        UiReadAttempts,
-                        () => Thread.Sleep(UiPollInterval));
-                }
-
-                if (remainingUsage is null ||
-                    !remainingUsage.TryGetCurrentPattern(InvokePattern.Pattern, out var invokePattern))
-                {
-                    continue;
-                }
-
-                ((InvokePattern)invokePattern).Invoke();
-
                 double? percentage = null;
                 WaitUntil(
                     () => (percentage = FindPercentage(window)) is not null,
                     UiReadAttempts,
                     () => Thread.Sleep(UiPollInterval));
+
+                if (!percentage.HasValue)
+                {
+                    AutomationElement? remainingUsage = null;
+                    WaitUntil(
+                        () => (remainingUsage = FindVisibleDescendantByName(window, RemainingUsageName)) is not null,
+                        UiReadAttempts,
+                        () => Thread.Sleep(UiPollInterval));
+
+                    if (remainingUsage is null)
+                    {
+                        TryReopen(window, profileButton);
+                        WaitUntil(
+                            () => (remainingUsage = FindVisibleDescendantByName(window, RemainingUsageName)) is not null,
+                            UiReadAttempts,
+                            () => Thread.Sleep(UiPollInterval));
+                    }
+
+                    if (remainingUsage is not null &&
+                        remainingUsage.TryGetCurrentPattern(InvokePattern.Pattern, out var invokePattern))
+                    {
+                        ((InvokePattern)invokePattern).Invoke();
+                        WaitUntil(
+                            () => (percentage = FindPercentage(window)) is not null,
+                            UiReadAttempts,
+                            () => Thread.Sleep(UiPollInterval));
+                    }
+                }
+
                 if (!percentage.HasValue)
                 {
                     continue;
