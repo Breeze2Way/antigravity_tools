@@ -70,7 +70,10 @@
                       ToolTipService.BetweenShowDelay="100" />
             </Grid>
 
-            <Grid x:Name="SettingsPanel" Visibility="Collapsed" Margin="12,8,12,8">
+            <Grid x:Name="SettingsPanel"
+                  Visibility="Collapsed"
+                  Margin="12,8,12,8"
+                  Background="White">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="30" />
                     <RowDefinition Height="*" />
@@ -81,7 +84,7 @@
                       Cursor="SizeAll"
                       MouseLeftButtonDown="SettingsHeader_MouseLeftButtonDown" />
                 <TextBlock Text="小工具设置"
-                           Foreground="White"
+                           Foreground="#111827"
                            FontSize="16"
                            FontWeight="SemiBold"
                            VerticalAlignment="Center" />
@@ -97,17 +100,17 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="周额度（可选 token）"
-                               Foreground="#B9C7D8"
+                               Foreground="#374151"
                                VerticalAlignment="Center" />
                     <TextBox x:Name="WeeklyBudgetBox" Grid.Column="1" Margin="8,0,0,0" />
                     <TextBlock Text="刷新间隔（秒）"
                                Grid.Row="1"
-                               Foreground="#B9C7D8"
+                               Foreground="#374151"
                                VerticalAlignment="Center" />
                     <TextBox x:Name="RefreshSecondsBox" Grid.Row="1" Grid.Column="1" Margin="8,0,0,0" />
                     <TextBlock Text="透明度"
                                Grid.Row="2"
-                               Foreground="#B9C7D8"
+                               Foreground="#374151"
                                VerticalAlignment="Center" />
                     <Slider x:Name="OpacitySlider"
                             Grid.Row="2"
@@ -121,13 +124,13 @@
                               Grid.Row="3"
                               Grid.Column="0"
                               Content="窗口置顶"
-                              Foreground="White"
+                              Foreground="#1F2937"
                               VerticalAlignment="Center" />
                     <CheckBox x:Name="AutoStartBox"
                               Grid.Row="3"
                               Grid.Column="1"
                               Content="开机启动"
-                              Foreground="White"
+                              Foreground="#1F2937"
                               VerticalAlignment="Center" />
                 </Grid>
                 <StackPanel Grid.Row="2"
