@@ -51,4 +51,14 @@ public sealed class UsageJsonParserTests
         Assert.Equal(TimeSpan.FromMinutes(10080), snapshot.Window);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1788144616), snapshot.ResetAt);
     }
+
+    [Fact]
+    public void ParsesPrimaryRateLimitFromTheActualPayloadShape()
+    {
+        const string json = "{\"timestamp\":\"2026-08-24T03:18:11Z\",\"payload\":{\"rate_limits\":{\"primary\":{\"used_percent\":1,\"window_minutes\":10080,\"resets_at\":1788144616}}}}";
+
+        Assert.True(UsageJsonParser.TryParseRateLimit(json, out var snapshot));
+        Assert.Equal(1, snapshot!.UsedPercent, precision: 6);
+        Assert.Equal(99, snapshot.RemainingPercent, precision: 6);
+    }
 }

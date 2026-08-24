@@ -106,9 +106,20 @@ public static class UsageJsonParser
                     timestampElement.GetString(),
                     CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                    out var recordedAt) ||
-                !root.TryGetProperty("rate_limits", out var rateLimits) ||
-                !rateLimits.TryGetProperty("primary", out var primary) ||
+                    out var recordedAt))
+            {
+                return false;
+            }
+
+            JsonElement rateLimits;
+            if (!root.TryGetProperty("rate_limits", out rateLimits) &&
+                (!root.TryGetProperty("payload", out var payload) ||
+                 !payload.TryGetProperty("rate_limits", out rateLimits)))
+            {
+                return false;
+            }
+
+            if (!rateLimits.TryGetProperty("primary", out var primary) ||
                 !TryReadDouble(primary, "used_percent", out var usedPercent) ||
                 usedPercent < 0d || usedPercent > 100d ||
                 !TryReadLong(primary, "window_minutes", out var windowMinutes) ||
