@@ -8,7 +8,8 @@ namespace CodexUsageWidget.Data;
 public sealed record DataReadResult(
     IReadOnlyList<UsageRecord> Records,
     int MalformedLineCount,
-    string? Warning);
+    string? Warning,
+    LocalRateLimitSnapshot? LatestRateLimit = null);
 
 public sealed class CodexDataReader
 {
@@ -18,6 +19,7 @@ public sealed class CodexDataReader
         var files = LocateRolloutFiles(paths, warnings);
         var records = new List<UsageRecord>();
         var malformedLineCount = 0;
+        LocalRateLimitSnapshot? latestRateLimit = null;
 
         foreach (var file in files)
         {
@@ -41,6 +43,13 @@ public sealed class CodexDataReader
                     try
                     {
                         using var document = JsonDocument.Parse(line);
+                        if (UsageJsonParser.TryParseRateLimit(line, out var rateLimit) &&
+                            rateLimit is not null &&
+                            (latestRateLimit is null || rateLimit.RecordedAt > latestRateLimit.RecordedAt))
+                        {
+                            latestRateLimit = rateLimit;
+                        }
+
                         if (UsageJsonParser.TryParse(line, file, out var record) && record is not null)
                         {
                             records.Add(record);
@@ -65,7 +74,8 @@ public sealed class CodexDataReader
         return new DataReadResult(
             records,
             malformedLineCount,
-            warnings.Count == 0 ? null : string.Join("; ", warnings));
+            warnings.Count == 0 ? null : string.Join("; ", warnings),
+            latestRateLimit);
     }
 
     private static IReadOnlyList<string> LocateRolloutFiles(CodexDataPaths paths, List<string> warnings)

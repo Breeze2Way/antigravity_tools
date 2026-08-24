@@ -154,6 +154,32 @@ public sealed class UsageRefreshServiceTests
         Assert.Equal(2, reads);
     }
 
+    [Fact]
+    public void UsesLocalRateLimitBeforeAnyUiProvider()
+    {
+        var resetAt = Now.AddDays(2);
+        var localRateLimit = new LocalRateLimitSnapshot(
+            Now,
+            UsedPercent: 12.5,
+            Window: TimeSpan.FromDays(7),
+            ResetAt: resetAt);
+        var providerReads = 0;
+        var service = new UsageRefreshService(
+            _ => new DataReadResult([], 0, null, localRateLimit),
+            new CodexDataPaths("state.db", "sessions"),
+            readOfficialUsage: () =>
+            {
+                providerReads++;
+                return new OfficialUsageSnapshot(1, TimeSpan.FromHours(1));
+            });
+
+        var state = service.Refresh(Now, new WidgetSettings());
+
+        Assert.Equal(87.5, state.OfficialRemainingPercent);
+        Assert.Equal(resetAt, state.ResetAt);
+        Assert.Equal(0, providerReads);
+    }
+
     private static string UsageJson(DateTimeOffset timestamp, long totalTokens) => JsonSerializer.Serialize(new
     {
         timestamp,

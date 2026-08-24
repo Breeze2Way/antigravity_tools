@@ -90,6 +90,22 @@ public sealed class CodexDataReaderTests
         Assert.Equal(21, record.Usage.TotalTokens);
     }
 
+    [Fact]
+    public void ReadsLatestRateLimitMetadataWithoutOpeningTheCodexUi()
+    {
+        using var temp = new TemporaryDirectory();
+        var sessions = Directory.CreateDirectory(Path.Combine(temp.Path, "sessions")).FullName;
+        var rollout = Path.Combine(sessions, "rollout-rate-limit.jsonl");
+        File.WriteAllText(
+            rollout,
+            "{\"timestamp\":\"2026-08-11T08:00:00Z\",\"rate_limits\":{\"primary\":{\"used_percent\":12.5,\"window_minutes\":10080,\"resets_at\":1788144616}}}");
+
+        var result = new CodexDataReader().Read(new CodexDataPaths("missing.db", sessions));
+
+        Assert.Empty(result.Records);
+        Assert.Equal(87.5, result.LatestRateLimit!.RemainingPercent, precision: 6);
+    }
+
     private static string UsageJson(string timestamp, long totalTokens) => JsonSerializer.Serialize(new
     {
         timestamp,

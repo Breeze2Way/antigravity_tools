@@ -51,9 +51,18 @@ public sealed class UsageRefreshService
         WidgetSettings settings,
         bool refreshOfficial = true)
     {
+        var result = read(paths);
         var officialRemainingPercent = lastOfficialRemainingPercent;
         var resetAt = lastResetAt;
-        if (refreshOfficial)
+        var hasLocalRateLimit = result.LatestRateLimit is not null;
+        if (result.LatestRateLimit is { } localRateLimit)
+        {
+            lastOfficialRemainingPercent = localRateLimit.RemainingPercent;
+            officialRemainingPercent = localRateLimit.RemainingPercent;
+            lastResetAt = localRateLimit.ResetAt;
+            resetAt = localRateLimit.ResetAt;
+        }
+        else if (refreshOfficial)
         {
             try
             {
@@ -78,8 +87,6 @@ public sealed class UsageRefreshService
                 // Keep the last successful official value when the UI is unavailable.
             }
         }
-
-        var result = read(paths);
         var recentTokensPerMinute = UsageRateCalculator.CalculateTokensPerMinute(
             result.Records,
             now,
@@ -114,7 +121,9 @@ public sealed class UsageRefreshService
         var status = result.Warning ?? (result.Records.Count == 0 ? "暂无记录 · 本地估算" : "本地估算");
         if (officialRemainingPercent.HasValue)
         {
-            status = $"官方周剩余 {officialRemainingPercent.Value:0.#}%";
+            status = hasLocalRateLimit
+                ? $"本地周剩余 {officialRemainingPercent.Value:0.#}%"
+                : $"官方周剩余 {officialRemainingPercent.Value:0.#}%";
         }
 
         var state = new WidgetViewState(

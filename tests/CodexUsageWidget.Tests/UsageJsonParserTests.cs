@@ -39,4 +39,16 @@ public sealed class UsageJsonParserTests
         Assert.False(UsageJsonParser.TryParse("{not-json", "session.jsonl", out _));
         Assert.False(UsageJsonParser.TryParse("{\"timestamp\":\"2026-08-11T08:00:00Z\",\"payload\":{}}", "session.jsonl", out _));
     }
+
+    [Fact]
+    public void ParsesPrimaryRateLimitFromSessionMetadata()
+    {
+        const string json = "{\"timestamp\":\"2026-08-11T08:00:00Z\",\"rate_limits\":{\"primary\":{\"used_percent\":12.5,\"window_minutes\":10080,\"resets_at\":1788144616}}}";
+
+        Assert.True(UsageJsonParser.TryParseRateLimit(json, out var snapshot));
+        Assert.Equal(12.5, snapshot!.UsedPercent, precision: 6);
+        Assert.Equal(87.5, snapshot.RemainingPercent, precision: 6);
+        Assert.Equal(TimeSpan.FromMinutes(10080), snapshot.Window);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1788144616), snapshot.ResetAt);
+    }
 }

@@ -29,8 +29,6 @@ public partial class MainWindow : Window
     private const string StartupValueName = "CodexUsageWidget";
 
     private readonly SettingsStore settingsStore = new();
-    private readonly OfficialUsageReader officialUsageReader = new();
-    private readonly UserActivityMonitor userActivityMonitor = new();
     private readonly WaterBallControl waterBall = new();
     private readonly System.Windows.Controls.TextBlock ballDetailsText = CreateDetailsTextBlock();
     private readonly System.Windows.Controls.TextBlock hostDetailsText = CreateDetailsTextBlock();
@@ -39,7 +37,6 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer localRefreshTimer;
     private readonly DispatcherTimer resetCountdownTimer;
     private readonly UsageFileWatcher usageFileWatcher;
-    private readonly CancellationTokenSource shutdownCancellation = new();
     private Forms.NotifyIcon trayIcon = null!;
     private WidgetSettings settings;
     private bool isRefreshing;
@@ -47,7 +44,6 @@ public partial class MainWindow : Window
     private WidgetViewState? lastState;
     private string? lastDetails;
     private System.Windows.Point? dashboardPosition;
-    private volatile bool officialRefreshSuspended;
 
     public MainWindow()
     {
@@ -68,8 +64,7 @@ public partial class MainWindow : Window
         var dataPaths = CodexDataPaths.ForCurrentUser();
         refreshService = new UsageRefreshService(
             new CodexDataReader(),
-            dataPaths,
-            ReadOfficialUsageIfSafe);
+            dataPaths);
         refreshTimer = new DispatcherTimer();
         refreshTimer.Tick += RefreshTimer_Tick;
         localRefreshTimer = new DispatcherTimer
@@ -101,7 +96,6 @@ public partial class MainWindow : Window
         refreshTimer.Stop();
         localRefreshTimer.Stop();
         resetCountdownTimer.Stop();
-        shutdownCancellation.Cancel();
         usageFileWatcher.Dispose();
         var savedPosition = dashboardPosition ?? new System.Windows.Point(Left, Top);
         settingsStore.Save(settings with { Left = savedPosition.X, Top = savedPosition.Y });
@@ -276,19 +270,6 @@ public partial class MainWindow : Window
         Header_MouseLeftButtonDown(sender, e);
     }
 
-    private OfficialUsageSnapshot? ReadOfficialUsageIfSafe()
-    {
-        if (officialRefreshSuspended ||
-            !userActivityMonitor.WaitForQuietPeriod(shutdownCancellation.Token) ||
-            officialRefreshSuspended ||
-            userActivityMonitor.IsUserActive())
-        {
-            return null;
-        }
-
-        return officialUsageReader.ReadUsage();
-    }
-
     private System.Windows.Rect GetCurrentWorkArea()
     {
         var handle = new WindowInteropHelper(this).Handle;
@@ -378,7 +359,6 @@ public partial class MainWindow : Window
         Height = SettingsWindowHeight;
         Left = settingsPosition.X;
         Top = settingsPosition.Y;
-        officialRefreshSuspended = true;
         WeeklyBudgetBox.Text = settings.WeeklyBudgetConfigured
             ? settings.WeeklyBudgetTokens.ToString(CultureInfo.InvariantCulture)
             : string.Empty;
@@ -392,7 +372,6 @@ public partial class MainWindow : Window
 
     private void ShowDashboard()
     {
-        officialRefreshSuspended = false;
         SettingsPanel.Visibility = Visibility.Collapsed;
         DashboardPanel.Visibility = Visibility.Visible;
         Width = BallWindowSize;

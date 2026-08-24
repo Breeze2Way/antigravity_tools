@@ -20,10 +20,12 @@ A compact Windows floating widget that visualizes the official Codex weekly rema
   重置行使用红色强调，并以 `132h` 这样的整数小时显示。
 - Low remaining usage gets a soft red alert ring instead of a disruptive flashing window.
   剩余量较低时显示柔和红色警戒环，不会用闪烁窗口打断工作。
-- Local file changes refresh the 7-day/30-day statistics, while official percentage reads remain low-frequency and cached.
-  本地文件变化会刷新 7 天/30 天统计，官方百分比采用低频读取并缓存。
-- Official usage reads wait for a quiet user period and never run during active input.
-  官方用量读取会等待用户空闲，不会在操作键盘鼠标时执行。
+- The weekly remaining percentage is read in the background from local Codex session metadata (`rate_limits.primary`), without clicking or interrupting the desktop app.
+  周剩余百分比在后台直接读取本地 Codex 会话元数据（`rate_limits.primary`），不会点击或打断桌面端操作。
+- File watching and a low-frequency timer keep the local value current; the last valid value is cached if a read temporarily fails.
+  文件监听和低频定时器会自动更新本地数值，读取暂时失败时继续显示上一次有效缓存。
+- Local file changes refresh the 7-day/30-day statistics, while the legacy official reader remains available only as an optional fallback.
+  本地文件变化会刷新 7 天/30 天统计，旧版官方读取器仅保留为可选备用方式。
 - Left-drag moves the widget; right-click opens refresh, settings, official usage, and exit actions.
   左键拖动窗口，右键打开刷新、设置、官方用量和退出菜单。
 
@@ -58,16 +60,16 @@ dotnet build src\CodexUsageWidget\CodexUsageWidget.csproj -c Release
 
 ## Data and Privacy / 数据与隐私
 
-The widget reads local Codex data and the remaining percentage shown by the desktop app in read-only mode:
+The widget reads local Codex data in read-only mode:
 
-程序以只读方式读取本机 Codex 数据和桌面端显示的剩余百分比：
+程序以只读方式读取本机 Codex 数据：
 
 - `%USERPROFILE%\.codex\state_5.sqlite`
 - `%USERPROFILE%\.codex\sessions\**\rollout-*.jsonl`
 
 It does not read, display, or upload `auth.json`, API keys, passwords, or other authentication data.
 
-程序不会读取、显示或上传 `auth.json`、API key、密码或其他认证信息。
+程序不会读取、显示或上传 `auth.json`、API key、密码或其他认证信息，也不会模拟鼠标点击桌面端用量页面。
 
 ## Project Structure / 项目结构
 
