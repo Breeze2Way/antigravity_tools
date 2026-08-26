@@ -56,7 +56,7 @@ public sealed class UsageDisplayFormatterTests
             thirtyDayTokens: 400_000_000,
             refreshedAt: new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero));
 
-        Assert.Contains("用量：当日10M  昨日200M", details);
+        Assert.Contains("用量：10M (昨日200M)", details);
     }
 
     [Fact]

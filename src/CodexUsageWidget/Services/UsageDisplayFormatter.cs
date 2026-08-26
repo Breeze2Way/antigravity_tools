@@ -62,7 +62,7 @@ public static class UsageDisplayFormatter
             Environment.NewLine,
             $"五小时剩余：{fiveHourText}",
             $"周剩余：{weeklyText}",
-            $"用量：当日{FormatCompactMillions(todayTokens)}  昨日{FormatCompactMillions(yesterdayTokens)}",
+            $"用量：{FormatCompactMillions(todayTokens)} (昨日{FormatCompactMillions(yesterdayTokens)})",
             $"近 7 天总量：{FormatMillions(sevenDayTokens)}",
             $"近 30 天总量：{FormatMillions(thirtyDayTokens)}",
             $"更新时间：{refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
