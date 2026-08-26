@@ -81,6 +81,15 @@ public static class WaterBallDisplay
         };
     }
 
+    public static WaterBallColor GetInvertedColor(double? remainingPercent)
+    {
+        var color = GetColor(remainingPercent);
+        return new WaterBallColor(
+            (byte)(255 - color.Red),
+            (byte)(255 - color.Green),
+            (byte)(255 - color.Blue));
+    }
+
     public static WaterBallColor GetBackgroundColor(double? remainingPercent)
     {
         return Interpolate(GetColor(remainingPercent), BucketBaseColor, 0.72);

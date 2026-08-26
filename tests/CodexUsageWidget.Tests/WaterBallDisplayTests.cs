@@ -65,6 +65,12 @@ public sealed class WaterBallDisplayTests
         Assert.Equal((byte)120, WaterBallDisplay.WeeklyRingTrackAlpha);
     }
 
+    [Fact]
+    public void InvertsInnerColorForWeeklyRing()
+    {
+        Assert.Equal(new WaterBallColor(196, 125, 9), WaterBallDisplay.GetInvertedColor(60));
+    }
+
     [Theory]
     [InlineData(20.0, true)]
     [InlineData(20.1, false)]
