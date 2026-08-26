@@ -211,7 +211,6 @@ public sealed class WaterBallControl : FrameworkElement
             center,
             radius - 1.5,
             weeklyRemainingPercent,
-            fiveHourRemainingPercent ?? weeklyRemainingPercent,
             thickness: WaterBallDisplay.WeeklyRingThickness,
             opacity: WaterBallDisplay.WeeklyRingOpacity);
 
@@ -318,7 +317,6 @@ public sealed class WaterBallControl : FrameworkElement
         WpfPoint center,
         double radius,
         double? remainingPercent,
-        double? colorSourcePercent,
         double thickness,
         double opacity)
     {
@@ -342,7 +340,7 @@ public sealed class WaterBallControl : FrameworkElement
             return;
         }
 
-        var activeColor = WaterBallDisplay.GetSoftComplementaryColor(colorSourcePercent);
+        var activeColor = WaterBallDisplay.GetWeeklyRingColor();
         var activeBrush = new SolidColorBrush(ToMediaColor(activeColor, opacity));
         var activePen = new MediaPen(activeBrush, thickness)
         {

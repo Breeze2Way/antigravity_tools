@@ -66,9 +66,9 @@ public sealed class WaterBallDisplayTests
     }
 
     [Fact]
-    public void UsesSoftComplementaryColorForWeeklyRing()
+    public void UsesFixedSkyBlueColorForWeeklyRing()
     {
-        Assert.Equal(new WaterBallColor(234, 180, 91), WaterBallDisplay.GetSoftComplementaryColor(60));
+        Assert.Equal(new WaterBallColor(88, 183, 232), WaterBallDisplay.GetWeeklyRingColor());
     }
 
     [Theory]

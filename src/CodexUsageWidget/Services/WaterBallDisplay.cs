@@ -16,6 +16,7 @@ public static class WaterBallDisplay
     private static readonly WaterBallColor BlueColor = new(59, 130, 246);
     private static readonly WaterBallColor GreenColor = new(34, 197, 94);
     private static readonly WaterBallColor BucketBaseColor = new(18, 32, 49);
+    private static readonly WaterBallColor WeeklyRingSkyBlue = new(88, 183, 232);
 
     public static double? GetFillRatio(double? remainingPercent)
     {
@@ -81,17 +82,9 @@ public static class WaterBallDisplay
         };
     }
 
-    public static WaterBallColor GetSoftComplementaryColor(double? remainingPercent)
+    public static WaterBallColor GetWeeklyRingColor()
     {
-        var color = GetColor(remainingPercent);
-        var (hue, saturation, lightness) = ToHsl(color);
-        var complementaryHue = (hue + 180) % 360;
-        var softenedSaturation = saturation * 0.85;
-        var (red, green, blue) = FromHsl(complementaryHue, softenedSaturation, lightness);
-        return new WaterBallColor(
-            BlendWithWhite(red, 0.10),
-            BlendWithWhite(green, 0.10),
-            BlendWithWhite(blue, 0.10));
+        return WeeklyRingSkyBlue;
     }
 
     public static WaterBallColor GetBackgroundColor(double? remainingPercent)
@@ -110,61 +103,6 @@ public static class WaterBallDisplay
             Blend(start.Red, end.Red, amount),
             Blend(start.Green, end.Green, amount),
             Blend(start.Blue, end.Blue, amount));
-    }
-
-    private static (double Hue, double Saturation, double Lightness) ToHsl(WaterBallColor color)
-    {
-        var red = color.Red / 255d;
-        var green = color.Green / 255d;
-        var blue = color.Blue / 255d;
-        var max = Math.Max(red, Math.Max(green, blue));
-        var min = Math.Min(red, Math.Min(green, blue));
-        var delta = max - min;
-        var lightness = (max + min) / 2;
-        if (delta <= double.Epsilon)
-        {
-            return (0, 0, lightness);
-        }
-
-        var saturation = delta / (1 - Math.Abs(2 * lightness - 1));
-        var hue = max switch
-        {
-            _ when Math.Abs(max - red) <= double.Epsilon => 60 * (((green - blue) / delta) % 6),
-            _ when Math.Abs(max - green) <= double.Epsilon => 60 * ((blue - red) / delta + 2),
-            _ => 60 * ((red - green) / delta + 4)
-        };
-
-        return ((hue + 360) % 360, saturation, lightness);
-    }
-
-    private static (double Red, double Green, double Blue) FromHsl(
-        double hue,
-        double saturation,
-        double lightness)
-    {
-        var chroma = (1 - Math.Abs(2 * lightness - 1)) * saturation;
-        var second = chroma * (1 - Math.Abs((hue / 60 % 2) - 1));
-        var match = lightness - chroma / 2;
-        var rgb = hue switch
-        {
-            < 60 => (chroma, second, 0d),
-            < 120 => (second, chroma, 0d),
-            < 180 => (0d, chroma, second),
-            < 240 => (0d, second, chroma),
-            < 300 => (second, 0d, chroma),
-            _ => (chroma, 0d, second)
-        };
-
-        return (rgb.Item1 + match, rgb.Item2 + match, rgb.Item3 + match);
-    }
-
-    private static byte BlendWithWhite(double channel, double amount)
-    {
-        var blended = channel * (1 - amount) + amount;
-        return (byte)Math.Clamp(
-            Math.Round(blended * 255, MidpointRounding.AwayFromZero),
-            0,
-            255);
     }
 
     private static byte Blend(byte start, byte end, double amount)
