@@ -106,6 +106,25 @@ public sealed class CodexDataReaderTests
         Assert.Equal(87.5, result.LatestRateLimit!.RemainingPercent, precision: 6);
     }
 
+    [Fact]
+    public void KeepsLatestFiveHourAndWeeklyRateLimitsSeparately()
+    {
+        using var temp = new TemporaryDirectory();
+        var sessions = Directory.CreateDirectory(Path.Combine(temp.Path, "sessions")).FullName;
+        var rollout = Path.Combine(sessions, "rollout-rate-limits.jsonl");
+        File.WriteAllLines(
+            rollout,
+            [
+                "{\"timestamp\":\"2026-08-11T08:00:00Z\",\"payload\":{\"rate_limits\":{\"primary\":{\"used_percent\":10,\"window_minutes\":300,\"resets_at\":1787718550},\"secondary\":{\"used_percent\":20,\"window_minutes\":10080,\"resets_at\":1788305350}}}}",
+                "{\"timestamp\":\"2026-08-11T09:00:00Z\",\"payload\":{\"rate_limits\":{\"primary\":{\"used_percent\":25,\"window_minutes\":300,\"resets_at\":1787718550},\"secondary\":{\"used_percent\":22,\"window_minutes\":10080,\"resets_at\":1788305350}}}}"
+            ]);
+
+        var result = new CodexDataReader().Read(new CodexDataPaths("missing.db", sessions));
+
+        Assert.Equal(75, result.LatestFiveHourRateLimit!.RemainingPercent, precision: 6);
+        Assert.Equal(78, result.LatestWeeklyRateLimit!.RemainingPercent, precision: 6);
+    }
+
     private static string UsageJson(string timestamp, long totalTokens) => JsonSerializer.Serialize(new
     {
         timestamp,

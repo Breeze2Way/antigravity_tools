@@ -1,27 +1,27 @@
 # Codex Usage Widget / Codex 用量悬浮球
 
-A compact Windows floating widget that visualizes the official Codex weekly remaining percentage as a liquid neon energy ball.
+A compact Windows floating widget that visualizes Codex five-hour and weekly remaining percentages as a liquid neon energy ball.
 
-一个小巧的 Windows 悬浮工具，用液态霓虹能量球直观显示 Codex 官方周剩余百分比。
+一个小巧的 Windows 悬浮工具，用液态霓虹能量球直观显示 Codex 五小时和周剩余百分比。
 
 ## Features / 功能
 
-- Official weekly remaining percentage in the center of the ball.
-  圆球中心显示官方周剩余百分比。
+- The ball center automatically prefers the five-hour remaining percentage and falls back to weekly remaining when no five-hour limit is available.
+  圆球中心优先显示五小时剩余百分比，没有五小时限制时自动回退到周剩余。
 - Water level, shell tint, glow, and ring color follow the remaining percentage.
   水位、球体底色、光晕和外圈颜色随剩余百分比变化。
 - Neon glass reflection, dynamic waterline, and floating bubbles.
   提供霓虹玻璃反光、动态水线和上浮气泡效果。
 - Animation speed and glow respond to recent Token consumption.
   动画速度和光晕会根据近期 Token 消耗速度响应。
-- Hover card shows weekly remaining, local 7-day/30-day totals, update time, and reset countdown.
-  鼠标悬停显示周剩余、近 7 天/30 天本地统计、更新时间和重置倒计时。
+- Hover card shows five-hour remaining, weekly remaining, both reset times, local 7-day/30-day totals, and update time.
+  鼠标悬停显示五小时剩余、周剩余、两者重置时间、近 7 天/30 天本地统计和更新时间。
 - The reset line is highlighted in red and uses compact integer hours such as `132h`.
   重置行使用红色强调，并以 `132h` 这样的整数小时显示。
 - Low remaining usage gets a soft red alert ring instead of a disruptive flashing window.
   剩余量较低时显示柔和红色警戒环，不会用闪烁窗口打断工作。
-- The weekly remaining percentage is read in the background from local Codex session metadata (`rate_limits.primary`), without clicking or interrupting the desktop app.
-  周剩余百分比在后台直接读取本地 Codex 会话元数据（`rate_limits.primary`），不会点击或打断桌面端操作。
+- Five-hour and weekly limits are identified by their window length (`300` and `10080` minutes), not by whether they appear as `primary` or `secondary`.
+  五小时和周额度按窗口长度（`300` 和 `10080` 分钟）自动识别，不依赖它们出现在 `primary` 还是 `secondary`。
 - File watching and a low-frequency timer keep the local value current; the last valid value is cached if a read temporarily fails.
   文件监听和低频定时器会自动更新本地数值，读取暂时失败时继续显示上一次有效缓存。
 - Local file changes refresh the 7-day/30-day statistics, while the legacy official reader remains available only as an optional fallback.

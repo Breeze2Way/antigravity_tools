@@ -9,7 +9,9 @@ public sealed record DataReadResult(
     IReadOnlyList<UsageRecord> Records,
     int MalformedLineCount,
     string? Warning,
-    LocalRateLimitSnapshot? LatestRateLimit = null);
+    LocalRateLimitSnapshot? LatestRateLimit = null,
+    LocalRateLimitSnapshot? LatestFiveHourRateLimit = null,
+    LocalRateLimitSnapshot? LatestWeeklyRateLimit = null);
 
 public sealed class CodexDataReader
 {
@@ -20,6 +22,8 @@ public sealed class CodexDataReader
         var records = new List<UsageRecord>();
         var malformedLineCount = 0;
         LocalRateLimitSnapshot? latestRateLimit = null;
+        LocalRateLimitSnapshot? latestFiveHourRateLimit = null;
+        LocalRateLimitSnapshot? latestWeeklyRateLimit = null;
 
         foreach (var file in files)
         {
@@ -43,11 +47,29 @@ public sealed class CodexDataReader
                     try
                     {
                         using var document = JsonDocument.Parse(line);
-                        if (UsageJsonParser.TryParseRateLimit(line, out var rateLimit) &&
-                            rateLimit is not null &&
-                            (latestRateLimit is null || rateLimit.RecordedAt > latestRateLimit.RecordedAt))
+                        if (UsageJsonParser.TryParseRateLimits(line, out var rateLimits))
                         {
-                            latestRateLimit = rateLimit;
+                            foreach (var rateLimit in rateLimits)
+                            {
+                                if (latestRateLimit is null || rateLimit.RecordedAt > latestRateLimit.RecordedAt)
+                                {
+                                    latestRateLimit = rateLimit;
+                                }
+
+                                if (rateLimit.IsFiveHour &&
+                                    (latestFiveHourRateLimit is null ||
+                                     rateLimit.RecordedAt > latestFiveHourRateLimit.RecordedAt))
+                                {
+                                    latestFiveHourRateLimit = rateLimit;
+                                }
+
+                                if (rateLimit.IsWeekly &&
+                                    (latestWeeklyRateLimit is null ||
+                                     rateLimit.RecordedAt > latestWeeklyRateLimit.RecordedAt))
+                                {
+                                    latestWeeklyRateLimit = rateLimit;
+                                }
+                            }
                         }
 
                         if (UsageJsonParser.TryParse(line, file, out var record) && record is not null)
@@ -75,7 +97,9 @@ public sealed class CodexDataReader
             records,
             malformedLineCount,
             warnings.Count == 0 ? null : string.Join("; ", warnings),
-            latestRateLimit);
+            latestRateLimit,
+            latestFiveHourRateLimit,
+            latestWeeklyRateLimit);
     }
 
     private static IReadOnlyList<string> LocateRolloutFiles(CodexDataPaths paths, List<string> warnings)

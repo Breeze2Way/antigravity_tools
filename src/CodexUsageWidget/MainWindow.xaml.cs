@@ -194,12 +194,16 @@ public partial class MainWindow : Window
     private void ApplySnapshot(WidgetViewState state)
     {
         lastState = state;
-        var officialText = WaterBallDisplay.FormatCenterText(state.OfficialRemainingPercent);
-        waterBall.RemainingPercent = state.OfficialRemainingPercent;
+        var fiveHourText = WaterBallDisplay.FormatCenterText(state.FiveHourRemainingPercent);
+        var weeklyText = WaterBallDisplay.FormatCenterText(state.OfficialRemainingPercent);
+        var centerPercent = state.FiveHourRemainingPercent ?? state.OfficialRemainingPercent;
+        var centerText = WaterBallDisplay.FormatCenterText(centerPercent);
+        waterBall.RemainingPercent = centerPercent;
         waterBall.TokensPerMinute = state.RecentTokensPerMinute;
-        waterBall.CenterText = officialText;
+        waterBall.CenterText = centerText;
         SetDetails(UsageDisplayFormatter.FormatTooltipDetails(
-            officialText,
+            fiveHourText,
+            weeklyText,
             state.SevenDay.Usage.TotalTokens,
             state.ThirtyDay.Usage.TotalTokens,
             state.RefreshedAt));
@@ -210,7 +214,10 @@ public partial class MainWindow : Window
         lastDetails = details;
         ApplyTooltipDetails(
             details,
-            UsageDisplayFormatter.FormatResetDetails(lastState?.ResetAt, DateTimeOffset.Now));
+            UsageDisplayFormatter.FormatResetDetails(
+                lastState?.FiveHourResetAt,
+                lastState?.WeeklyResetAt ?? lastState?.ResetAt,
+                DateTimeOffset.Now));
     }
 
     private void ResetCountdownTimer_Tick(object? sender, EventArgs e)
@@ -219,7 +226,10 @@ public partial class MainWindow : Window
         {
             ApplyTooltipDetails(
                 lastDetails,
-                UsageDisplayFormatter.FormatResetDetails(lastState?.ResetAt, DateTimeOffset.Now));
+                UsageDisplayFormatter.FormatResetDetails(
+                    lastState?.FiveHourResetAt,
+                    lastState?.WeeklyResetAt ?? lastState?.ResetAt,
+                    DateTimeOffset.Now));
         }
     }
 

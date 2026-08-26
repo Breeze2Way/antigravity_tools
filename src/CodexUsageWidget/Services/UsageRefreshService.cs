@@ -9,6 +9,8 @@ public sealed class UsageRefreshService
     private readonly CodexDataPaths paths;
     private readonly Func<OfficialUsageSnapshot?>? readOfficialUsage;
     private WidgetViewState? lastSuccessful;
+    private double? lastFiveHourRemainingPercent;
+    private DateTimeOffset? lastFiveHourResetAt;
     private double? lastOfficialRemainingPercent;
     private DateTimeOffset? lastResetAt;
 
@@ -52,17 +54,56 @@ public sealed class UsageRefreshService
         bool refreshOfficial = true)
     {
         var result = read(paths);
-        var officialRemainingPercent = lastOfficialRemainingPercent;
-        var resetAt = lastResetAt;
-        var hasLocalRateLimit = result.LatestRateLimit is not null;
-        if (result.LatestRateLimit is { } localRateLimit)
+        var fiveHourRemainingPercent = lastFiveHourRemainingPercent;
+        var weeklyRemainingPercent = lastOfficialRemainingPercent;
+        var fiveHourResetAt = lastFiveHourResetAt;
+        var weeklyResetAt = lastResetAt;
+        var hasLocalRateLimit = false;
+        var hasLocalWeeklyRateLimit = false;
+
+        if (result.LatestFiveHourRateLimit is { } localFiveHourRateLimit)
         {
-            lastOfficialRemainingPercent = localRateLimit.RemainingPercent;
-            officialRemainingPercent = localRateLimit.RemainingPercent;
-            lastResetAt = localRateLimit.ResetAt;
-            resetAt = localRateLimit.ResetAt;
+            lastFiveHourRemainingPercent = localFiveHourRateLimit.RemainingPercent;
+            fiveHourRemainingPercent = localFiveHourRateLimit.RemainingPercent;
+            lastFiveHourResetAt = localFiveHourRateLimit.ResetAt;
+            fiveHourResetAt = localFiveHourRateLimit.ResetAt;
+            hasLocalRateLimit = true;
         }
-        else if (refreshOfficial)
+
+        if (result.LatestWeeklyRateLimit is { } localWeeklyRateLimit)
+        {
+            lastOfficialRemainingPercent = localWeeklyRateLimit.RemainingPercent;
+            weeklyRemainingPercent = localWeeklyRateLimit.RemainingPercent;
+            lastResetAt = localWeeklyRateLimit.ResetAt;
+            weeklyResetAt = localWeeklyRateLimit.ResetAt;
+            hasLocalRateLimit = true;
+            hasLocalWeeklyRateLimit = true;
+        }
+
+        if (result.LatestRateLimit is { } legacyRateLimit &&
+            result.LatestFiveHourRateLimit is null &&
+            result.LatestWeeklyRateLimit is null)
+        {
+            if (legacyRateLimit.IsFiveHour)
+            {
+                lastFiveHourRemainingPercent = legacyRateLimit.RemainingPercent;
+                fiveHourRemainingPercent = legacyRateLimit.RemainingPercent;
+                lastFiveHourResetAt = legacyRateLimit.ResetAt;
+                fiveHourResetAt = legacyRateLimit.ResetAt;
+            }
+            else
+            {
+                lastOfficialRemainingPercent = legacyRateLimit.RemainingPercent;
+                weeklyRemainingPercent = legacyRateLimit.RemainingPercent;
+                lastResetAt = legacyRateLimit.ResetAt;
+                weeklyResetAt = legacyRateLimit.ResetAt;
+            }
+
+            hasLocalRateLimit = true;
+            hasLocalWeeklyRateLimit = !legacyRateLimit.IsFiveHour;
+        }
+
+        if (refreshOfficial && !hasLocalWeeklyRateLimit)
         {
             try
             {
@@ -72,13 +113,13 @@ public sealed class UsageRefreshService
                     if (currentOfficialUsage.RemainingPercent.HasValue)
                     {
                         lastOfficialRemainingPercent = currentOfficialUsage.RemainingPercent;
-                        officialRemainingPercent = currentOfficialUsage.RemainingPercent;
+                        weeklyRemainingPercent = currentOfficialUsage.RemainingPercent;
                     }
 
                     if (currentOfficialUsage.ResetAfter.HasValue)
                     {
                         lastResetAt = now + currentOfficialUsage.ResetAfter.Value;
-                        resetAt = lastResetAt;
+                        weeklyResetAt = lastResetAt;
                     }
                 }
             }
@@ -96,8 +137,11 @@ public sealed class UsageRefreshService
             return lastSuccessful with
             {
                 Status = $"{result.Warning} · 保留上次数据",
-                OfficialRemainingPercent = officialRemainingPercent,
-                ResetAt = resetAt,
+                OfficialRemainingPercent = weeklyRemainingPercent,
+                ResetAt = weeklyResetAt,
+                WeeklyResetAt = weeklyResetAt,
+                FiveHourRemainingPercent = fiveHourRemainingPercent,
+                FiveHourResetAt = fiveHourResetAt,
                 RecentTokensPerMinute = lastSuccessful.RecentTokensPerMinute
             };
         }
@@ -119,11 +163,24 @@ public sealed class UsageRefreshService
             TimeSpan.FromDays(30),
             budgetTokens);
         var status = result.Warning ?? (result.Records.Count == 0 ? "暂无记录 · 本地估算" : "本地估算");
-        if (officialRemainingPercent.HasValue)
+        if (fiveHourRemainingPercent.HasValue || weeklyRemainingPercent.HasValue)
         {
-            status = hasLocalRateLimit
-                ? $"本地周剩余 {officialRemainingPercent.Value:0.#}%"
-                : $"官方周剩余 {officialRemainingPercent.Value:0.#}%";
+            var statusParts = new List<string>();
+            if (fiveHourRemainingPercent.HasValue)
+            {
+                statusParts.Add(hasLocalRateLimit
+                    ? $"本地五小时剩余 {fiveHourRemainingPercent.Value:0.#}%"
+                    : $"五小时剩余 {fiveHourRemainingPercent.Value:0.#}%");
+            }
+
+            if (weeklyRemainingPercent.HasValue)
+            {
+                statusParts.Add(hasLocalWeeklyRateLimit
+                    ? $"本地周剩余 {weeklyRemainingPercent.Value:0.#}%"
+                    : $"官方周剩余 {weeklyRemainingPercent.Value:0.#}%");
+            }
+
+            status = string.Join(" · ", statusParts);
         }
 
         var state = new WidgetViewState(
@@ -133,9 +190,12 @@ public sealed class UsageRefreshService
             now,
             status,
             IsEstimate: true,
-            OfficialRemainingPercent: officialRemainingPercent)
+            OfficialRemainingPercent: weeklyRemainingPercent)
         {
-            ResetAt = resetAt,
+            ResetAt = weeklyResetAt,
+            WeeklyResetAt = weeklyResetAt,
+            FiveHourRemainingPercent = fiveHourRemainingPercent,
+            FiveHourResetAt = fiveHourResetAt,
             RecentTokensPerMinute = recentTokensPerMinute
         };
 

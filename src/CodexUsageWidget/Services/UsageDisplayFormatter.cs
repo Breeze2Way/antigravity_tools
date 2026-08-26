@@ -16,9 +16,25 @@ public static class UsageDisplayFormatter
         long thirtyDayTokens,
         DateTimeOffset refreshedAt)
     {
+        return FormatTooltipDetails(
+            "--",
+            officialText,
+            sevenDayTokens,
+            thirtyDayTokens,
+            refreshedAt);
+    }
+
+    public static string FormatTooltipDetails(
+        string fiveHourText,
+        string weeklyText,
+        long sevenDayTokens,
+        long thirtyDayTokens,
+        DateTimeOffset refreshedAt)
+    {
         return string.Join(
             Environment.NewLine,
-            $"周剩余：{officialText}",
+            $"五小时剩余：{fiveHourText}",
+            $"周剩余：{weeklyText}",
             $"近 7 天总量：{FormatMillions(sevenDayTokens)}",
             $"近 30 天总量：{FormatMillions(thirtyDayTokens)}",
             $"更新时间：{refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
@@ -45,5 +61,26 @@ public static class UsageDisplayFormatter
         var remainingHours = Math.Max(0, Math.Floor(remaining.TotalHours));
         var localResetAt = resetAt.Value.ToOffset(now.Offset);
         return $"重置时间：{localResetAt:yyyy-MM-dd HH:mm} [剩余 {remainingHours.ToString("0", CultureInfo.InvariantCulture)}h]";
+    }
+
+    public static string? FormatResetDetails(
+        DateTimeOffset? fiveHourResetAt,
+        DateTimeOffset? weeklyResetAt,
+        DateTimeOffset now)
+    {
+        var details = new List<string>();
+        var fiveHourDetails = FormatResetDetails(fiveHourResetAt, now);
+        if (fiveHourDetails is not null)
+        {
+            details.Add(fiveHourDetails.Replace("重置时间：", "五小时重置时间：", StringComparison.Ordinal));
+        }
+
+        var weeklyDetails = FormatResetDetails(weeklyResetAt, now);
+        if (weeklyDetails is not null)
+        {
+            details.Add(weeklyDetails.Replace("重置时间：", "周重置时间：", StringComparison.Ordinal));
+        }
+
+        return details.Count == 0 ? null : string.Join(Environment.NewLine, details);
     }
 }

@@ -61,4 +61,15 @@ public sealed class UsageJsonParserTests
         Assert.Equal(1, snapshot!.UsedPercent, precision: 6);
         Assert.Equal(99, snapshot.RemainingPercent, precision: 6);
     }
+
+    [Fact]
+    public void ParsesShortAndWeeklyRateLimitsByWindowLength()
+    {
+        const string json = "{\"timestamp\":\"2026-08-26T02:02:53Z\",\"payload\":{\"rate_limits\":{\"primary\":{\"used_percent\":7,\"window_minutes\":300,\"resets_at\":1787718550},\"secondary\":{\"used_percent\":1,\"window_minutes\":10080,\"resets_at\":1788305350}}}}";
+
+        Assert.True(UsageJsonParser.TryParseRateLimits(json, out var snapshots));
+        Assert.Equal(2, snapshots.Count);
+        Assert.Equal(93, snapshots.Single(snapshot => snapshot.IsFiveHour).RemainingPercent, precision: 6);
+        Assert.Equal(99, snapshots.Single(snapshot => snapshot.IsWeekly).RemainingPercent, precision: 6);
+    }
 }

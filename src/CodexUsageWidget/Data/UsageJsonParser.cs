@@ -96,6 +96,21 @@ public static class UsageJsonParser
     {
         snapshot = null;
 
+        if (!TryParseRateLimits(json, out var snapshots))
+        {
+            return false;
+        }
+
+        snapshot = snapshots[0];
+        return true;
+    }
+
+    public static bool TryParseRateLimits(
+        string json,
+        out IReadOnlyList<LocalRateLimitSnapshot> snapshots)
+    {
+        snapshots = [];
+
         try
         {
             using var document = JsonDocument.Parse(json);
@@ -119,21 +134,22 @@ public static class UsageJsonParser
                 return false;
             }
 
-            if (!rateLimits.TryGetProperty("primary", out var primary) ||
-                !TryReadDouble(primary, "used_percent", out var usedPercent) ||
-                usedPercent < 0d || usedPercent > 100d ||
-                !TryReadLong(primary, "window_minutes", out var windowMinutes) ||
-                windowMinutes <= 0 ||
-                !TryReadLong(primary, "resets_at", out var resetSeconds))
+            var parsed = new List<LocalRateLimitSnapshot>();
+            foreach (var propertyName in new[] { "primary", "secondary" })
+            {
+                if (rateLimits.TryGetProperty(propertyName, out var limit) &&
+                    TryParseRateLimit(limit, recordedAt, out var parsedLimit))
+                {
+                    parsed.Add(parsedLimit);
+                }
+            }
+
+            if (parsed.Count == 0)
             {
                 return false;
             }
 
-            snapshot = new LocalRateLimitSnapshot(
-                recordedAt,
-                usedPercent,
-                TimeSpan.FromMinutes(windowMinutes),
-                DateTimeOffset.FromUnixTimeSeconds(resetSeconds));
+            snapshots = parsed;
             return true;
         }
         catch (JsonException)
@@ -152,6 +168,33 @@ public static class UsageJsonParser
         {
             return false;
         }
+        catch (ArgumentOutOfRangeException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryParseRateLimit(
+        JsonElement element,
+        DateTimeOffset recordedAt,
+        out LocalRateLimitSnapshot snapshot)
+    {
+        snapshot = default!;
+        if (!TryReadDouble(element, "used_percent", out var usedPercent) ||
+            usedPercent < 0d || usedPercent > 100d ||
+            !TryReadLong(element, "window_minutes", out var windowMinutes) ||
+            windowMinutes <= 0 ||
+            !TryReadLong(element, "resets_at", out var resetSeconds))
+        {
+            return false;
+        }
+
+        snapshot = new LocalRateLimitSnapshot(
+            recordedAt,
+            usedPercent,
+            TimeSpan.FromMinutes(windowMinutes),
+            DateTimeOffset.FromUnixTimeSeconds(resetSeconds));
+        return true;
     }
 
     private static bool TryReadDouble(JsonElement parent, string propertyName, out double value)

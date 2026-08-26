@@ -10,5 +10,8 @@ public sealed record WidgetViewState(
     double? OfficialRemainingPercent = null)
 {
     public DateTimeOffset? ResetAt { get; init; }
+    public double? FiveHourRemainingPercent { get; init; }
+    public DateTimeOffset? FiveHourResetAt { get; init; }
+    public DateTimeOffset? WeeklyResetAt { get; init; }
     public double RecentTokensPerMinute { get; init; }
 }

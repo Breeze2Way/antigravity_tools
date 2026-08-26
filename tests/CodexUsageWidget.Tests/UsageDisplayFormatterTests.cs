@@ -31,6 +31,20 @@ public sealed class UsageDisplayFormatterTests
     }
 
     [Fact]
+    public void FormatsBothFiveHourAndWeeklyRemainingValues()
+    {
+        var details = UsageDisplayFormatter.FormatTooltipDetails(
+            fiveHourText: "88%",
+            weeklyText: "66%",
+            sevenDayTokens: 1_000_000,
+            thirtyDayTokens: 2_000_000,
+            refreshedAt: new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.Zero));
+
+        Assert.Contains("五小时剩余：88%", details);
+        Assert.Contains("周剩余：66%", details);
+    }
+
+    [Fact]
     public void FormatsResetTimeWithRemainingHours()
     {
         var now = new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.Zero);
@@ -45,5 +59,19 @@ public sealed class UsageDisplayFormatterTests
     public void OmitsResetDetailsWhenResetTimeIsUnavailable()
     {
         Assert.Null(UsageDisplayFormatter.FormatResetDetails(null, DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void FormatsBothFiveHourAndWeeklyResetTimes()
+    {
+        var now = new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.Zero);
+
+        var details = UsageDisplayFormatter.FormatResetDetails(
+            now.AddHours(2.5),
+            now.AddDays(2),
+            now);
+
+        Assert.Contains("五小时重置时间：2026-08-12 14:30 [剩余 2h]", details);
+        Assert.Contains("周重置时间：2026-08-14 12:00 [剩余 48h]", details);
     }
 }

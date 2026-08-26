@@ -180,6 +180,55 @@ public sealed class UsageRefreshServiceTests
         Assert.Equal(0, providerReads);
     }
 
+    [Fact]
+    public void ExposesFiveHourAndWeeklyRemainingValuesAndResetTimes()
+    {
+        var fiveHourResetAt = Now.AddHours(3);
+        var weeklyResetAt = Now.AddDays(4);
+        var service = new UsageRefreshService(
+            _ => new DataReadResult(
+                [],
+                0,
+                null,
+                LatestRateLimit: null,
+                LatestFiveHourRateLimit: new LocalRateLimitSnapshot(
+                    Now,
+                    UsedPercent: 12,
+                    Window: TimeSpan.FromHours(5),
+                    ResetAt: fiveHourResetAt),
+                LatestWeeklyRateLimit: new LocalRateLimitSnapshot(
+                    Now,
+                    UsedPercent: 34,
+                    Window: TimeSpan.FromDays(7),
+                    ResetAt: weeklyResetAt)),
+            new CodexDataPaths("state.db", "sessions"));
+
+        var state = service.Refresh(Now, new WidgetSettings());
+
+        Assert.Equal(88, state.FiveHourRemainingPercent);
+        Assert.Equal(66, state.OfficialRemainingPercent);
+        Assert.Equal(fiveHourResetAt, state.FiveHourResetAt);
+        Assert.Equal(weeklyResetAt, state.WeeklyResetAt);
+    }
+
+    [Fact]
+    public void FallsBackToWeeklyRemainingWhenFiveHourLimitIsUnavailable()
+    {
+        var weekly = new LocalRateLimitSnapshot(
+            Now,
+            UsedPercent: 34,
+            Window: TimeSpan.FromDays(7),
+            ResetAt: Now.AddDays(4));
+        var service = new UsageRefreshService(
+            _ => new DataReadResult([], 0, null, LatestWeeklyRateLimit: weekly),
+            new CodexDataPaths("state.db", "sessions"));
+
+        var state = service.Refresh(Now, new WidgetSettings());
+
+        Assert.Null(state.FiveHourRemainingPercent);
+        Assert.Equal(66, state.OfficialRemainingPercent);
+    }
+
     private static string UsageJson(DateTimeOffset timestamp, long totalTokens) => JsonSerializer.Serialize(new
     {
         timestamp,
