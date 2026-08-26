@@ -212,7 +212,7 @@ public sealed class WaterBallControl : FrameworkElement
             radius - 1.5,
             weeklyRemainingPercent,
             thickness: WaterBallDisplay.WeeklyRingThickness,
-            opacity: 0.88 + alertPulse * 0.08);
+            opacity: WaterBallDisplay.WeeklyRingOpacity);
 
         DrawCenterText(drawingContext, center, radius);
     }
@@ -325,7 +325,8 @@ public sealed class WaterBallControl : FrameworkElement
             return;
         }
 
-        var trackBrush = new SolidColorBrush(MediaColor.FromArgb(72, 172, 190, 208));
+        var trackBrush = new SolidColorBrush(
+            MediaColor.FromArgb(WaterBallDisplay.WeeklyRingTrackAlpha, 172, 190, 208));
         drawingContext.DrawEllipse(
             null,
             new MediaPen(trackBrush, thickness),

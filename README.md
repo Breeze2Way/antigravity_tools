@@ -37,12 +37,12 @@ The animation uses an adaptive background-priority timer instead of repainting o
 
 动画使用自适应的后台优先级定时器，不再跟随屏幕每一帧重绘：
 
-- No official percentage: approximately 160 ms per frame.
-  没有官方百分比：约每 160ms 更新一次。
-- Normal state: approximately 100 ms per frame.
-  普通状态：约每 100ms 更新一次。
-- Hover or fast Token consumption: approximately 50 ms per frame.
-  鼠标悬停或 Token 消耗较快：约每 50ms 更新一次。
+- No official percentage: approximately 360 ms per frame.
+  没有官方百分比：约每 360ms 更新一次。
+- Normal state: approximately 240 ms per frame.
+  普通状态：约每 240ms 更新一次。
+- Hover or fast Token consumption: approximately 160 ms per frame.
+  鼠标悬停或 Token 消耗较快：约每 160ms 更新一次。
 - Invisible controls skip rendering work.
   控件不可见时跳过绘制工作。
 

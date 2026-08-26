@@ -58,6 +58,13 @@ public sealed class WaterBallDisplayTests
         Assert.Equal(4.4, WaterBallDisplay.WeeklyRingThickness, precision: 6);
     }
 
+    [Fact]
+    public void UsesHighContrastWeeklyRingStyle()
+    {
+        Assert.Equal(1.0, WaterBallDisplay.WeeklyRingOpacity, precision: 6);
+        Assert.Equal((byte)120, WaterBallDisplay.WeeklyRingTrackAlpha);
+    }
+
     [Theory]
     [InlineData(20.0, true)]
     [InlineData(20.1, false)]

@@ -3,21 +3,21 @@ namespace CodexUsageWidget.Tests;
 public sealed class WaterBallAnimationPolicyTests
 {
     [Fact]
-    public void UsesTenFramesPerSecondForNormalState()
+    public void UsesLowerFrameRateForNormalState()
     {
         Assert.Equal(
-            TimeSpan.FromMilliseconds(100),
+            TimeSpan.FromMilliseconds(240),
             WaterBallAnimationPolicy.GetInterval(60, 0, false));
     }
 
     [Fact]
-    public void UsesTwentyFramesPerSecondForHoverOrFastUsage()
+    public void UsesModerateFrameRateForHoverOrFastUsage()
     {
         Assert.Equal(
-            TimeSpan.FromMilliseconds(50),
+            TimeSpan.FromMilliseconds(160),
             WaterBallAnimationPolicy.GetInterval(60, 220_000, false));
         Assert.Equal(
-            TimeSpan.FromMilliseconds(50),
+            TimeSpan.FromMilliseconds(160),
             WaterBallAnimationPolicy.GetInterval(60, 0, true));
     }
 
@@ -25,7 +25,7 @@ public sealed class WaterBallAnimationPolicyTests
     public void UsesSlowerRefreshWhenOfficialPercentageIsUnavailable()
     {
         Assert.Equal(
-            TimeSpan.FromMilliseconds(160),
+            TimeSpan.FromMilliseconds(360),
             WaterBallAnimationPolicy.GetInterval(null, 0, false));
     }
 }
