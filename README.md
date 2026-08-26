@@ -8,12 +8,12 @@ A compact Windows floating widget that visualizes Codex five-hour and weekly rem
 
 - The ball center automatically prefers the five-hour remaining percentage and falls back to weekly remaining when no five-hour limit is available.
   圆球中心优先显示五小时剩余百分比，没有五小时限制时自动回退到周剩余。
-- A thin outer ring shows weekly remaining; a thicker inner ring shows five-hour remaining.
-  外窄环显示周剩余，内粗环显示五小时剩余。
-- Missing limit windows remain visible as dim tracks instead of showing misleading values.
-  缺失的额度窗口显示为低亮度轨道，不显示误导性数值。
-- Neon glass shell, adaptive glow, and animated progress rings.
-  提供霓虹玻璃球壳、自适应光晕和动态进度环。
+- A thin outer ring shows weekly remaining; the inner water ball shows five-hour remaining.
+  外窄环显示周剩余，内圈水球显示五小时剩余。
+- Missing limit windows remain visually muted instead of showing misleading values.
+  缺失的额度窗口保持低亮度，不显示误导性数值。
+- Neon glass shell, adaptive glow, animated water waves, and a weekly progress ring.
+  提供霓虹玻璃球壳、自适应光晕、动态水波和周额度进度环。
 - Ring animation speed and glow respond to recent Token consumption.
   进度环动画速度和光晕会根据近期 Token 消耗速度响应。
 - Hover card shows five-hour remaining, weekly remaining, both reset times, local 7-day/30-day totals, and update time.

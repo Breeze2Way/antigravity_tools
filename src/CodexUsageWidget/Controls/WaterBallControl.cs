@@ -213,13 +213,6 @@ public sealed class WaterBallControl : FrameworkElement
             weeklyRemainingPercent,
             thickness: 2.2,
             opacity: 0.88 + alertPulse * 0.08);
-        DrawProgressRing(
-            drawingContext,
-            center,
-            radius - 8.0,
-            fiveHourRemainingPercent,
-            thickness: 4.2,
-            opacity: 0.94 + alertPulse * 0.12);
 
         DrawCenterText(drawingContext, center, radius);
     }
