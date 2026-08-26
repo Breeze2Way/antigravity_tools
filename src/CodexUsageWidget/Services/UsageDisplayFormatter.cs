@@ -10,6 +10,12 @@ public static class UsageDisplayFormatter
         return $"{millions.ToString("0.0", CultureInfo.InvariantCulture)}M";
     }
 
+    public static string FormatCompactMillions(long tokens)
+    {
+        var millions = Math.Max(0, tokens) / 1_000_000d;
+        return $"{millions.ToString("0.##", CultureInfo.InvariantCulture)}M";
+    }
+
     public static string FormatTooltipDetails(
         string officialText,
         long sevenDayTokens,
@@ -19,6 +25,8 @@ public static class UsageDisplayFormatter
         return FormatTooltipDetails(
             "--",
             officialText,
+            todayTokens: 0,
+            yesterdayTokens: 0,
             sevenDayTokens,
             thirtyDayTokens,
             refreshedAt);
@@ -31,10 +39,30 @@ public static class UsageDisplayFormatter
         long thirtyDayTokens,
         DateTimeOffset refreshedAt)
     {
+        return FormatTooltipDetails(
+            fiveHourText,
+            weeklyText,
+            todayTokens: 0,
+            yesterdayTokens: 0,
+            sevenDayTokens,
+            thirtyDayTokens,
+            refreshedAt);
+    }
+
+    public static string FormatTooltipDetails(
+        string fiveHourText,
+        string weeklyText,
+        long todayTokens,
+        long yesterdayTokens,
+        long sevenDayTokens,
+        long thirtyDayTokens,
+        DateTimeOffset refreshedAt)
+    {
         return string.Join(
             Environment.NewLine,
             $"五小时剩余：{fiveHourText}",
             $"周剩余：{weeklyText}",
+            $"用量：当日{FormatCompactMillions(todayTokens)}  昨日{FormatCompactMillions(yesterdayTokens)}",
             $"近 7 天总量：{FormatMillions(sevenDayTokens)}",
             $"近 30 天总量：{FormatMillions(thirtyDayTokens)}",
             $"更新时间：{refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");

@@ -206,6 +206,8 @@ public partial class MainWindow : Window
         SetDetails(UsageDisplayFormatter.FormatTooltipDetails(
             fiveHourText,
             weeklyText,
+            state.TodayTokens,
+            state.YesterdayTokens,
             state.SevenDay.Usage.TotalTokens,
             state.ThirtyDay.Usage.TotalTokens,
             state.RefreshedAt));

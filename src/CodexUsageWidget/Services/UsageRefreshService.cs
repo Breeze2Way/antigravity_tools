@@ -162,6 +162,8 @@ public sealed class UsageRefreshService
             now,
             TimeSpan.FromDays(30),
             budgetTokens);
+        var todayTokens = UsageCalculator.SumTokensForLocalCalendarDate(result.Records, now, daysAgo: 0);
+        var yesterdayTokens = UsageCalculator.SumTokensForLocalCalendarDate(result.Records, now, daysAgo: 1);
         var status = result.Warning ?? (result.Records.Count == 0 ? "暂无记录 · 本地估算" : "本地估算");
         if (fiveHourRemainingPercent.HasValue || weeklyRemainingPercent.HasValue)
         {
@@ -196,7 +198,9 @@ public sealed class UsageRefreshService
             WeeklyResetAt = weeklyResetAt,
             FiveHourRemainingPercent = fiveHourRemainingPercent,
             FiveHourResetAt = fiveHourResetAt,
-            RecentTokensPerMinute = recentTokensPerMinute
+            RecentTokensPerMinute = recentTokensPerMinute,
+            TodayTokens = todayTokens,
+            YesterdayTokens = yesterdayTokens
         };
 
         if (result.Warning is null)

@@ -83,6 +83,21 @@ public sealed class UsageCalculatorTests
         Assert.Equal(0, snapshot.RemainingPercent, precision: 6);
     }
 
+    [Fact]
+    public void SumsTokensByLocalCalendarDate()
+    {
+        var now = new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.FromHours(8));
+        var records = new[]
+        {
+            CreateRecord(new DateTimeOffset(2026, 8, 11, 9, 0, 0, TimeSpan.FromHours(8)), 10, "today"),
+            CreateRecord(new DateTimeOffset(2026, 8, 10, 23, 30, 0, TimeSpan.FromHours(8)), 200, "yesterday"),
+            CreateRecord(new DateTimeOffset(2026, 8, 9, 23, 30, 0, TimeSpan.FromHours(8)), 900, "older")
+        };
+
+        Assert.Equal(10, UsageCalculator.SumTokensForLocalCalendarDate(records, now, daysAgo: 0));
+        Assert.Equal(200, UsageCalculator.SumTokensForLocalCalendarDate(records, now, daysAgo: 1));
+    }
+
     private static UsageRecord CreateRecord(
         DateTimeOffset timestamp,
         long totalTokens,

@@ -16,8 +16,8 @@ A compact Windows floating widget that visualizes Codex five-hour and weekly rem
   提供霓虹玻璃球壳、自适应光晕、动态水波和周额度进度环。
 - Ring animation speed and glow respond to recent Token consumption.
   进度环动画速度和光晕会根据近期 Token 消耗速度响应。
-- Hover card shows five-hour remaining, weekly remaining, both reset times, local 7-day/30-day totals, and update time.
-  鼠标悬停显示五小时剩余、周剩余、两者重置时间、近 7 天/30 天本地统计和更新时间。
+- Hover card shows five-hour remaining, weekly remaining, both reset times, today/yesterday usage, local 7-day/30-day totals, and update time.
+  鼠标悬停显示五小时剩余、周剩余、两者重置时间、当日/昨日用量、近 7 天/30 天本地统计和更新时间。
 - The reset line is highlighted in red and uses compact integer hours such as `132h`.
   重置行使用红色强调，并以 `132h` 这样的整数小时显示。
 - Low remaining usage gets a soft red alert ring instead of a disruptive flashing window.

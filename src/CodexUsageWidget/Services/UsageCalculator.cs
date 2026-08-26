@@ -64,6 +64,22 @@ public static class UsageCalculator
         return normalized;
     }
 
+    public static long SumTokensForLocalCalendarDate(
+        IEnumerable<UsageRecord> records,
+        DateTimeOffset now,
+        int daysAgo)
+    {
+        if (daysAgo < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(daysAgo));
+        }
+
+        var targetDate = now.ToLocalTime().Date.AddDays(-daysAgo);
+        return Normalize(records)
+            .Where(record => record.Timestamp.ToLocalTime().Date == targetDate)
+            .Sum(record => Math.Max(0, record.Usage.TotalTokens));
+    }
+
     private static double CalculateUsedPercent(long totalTokens, long budgetTokens, bool hasData)
     {
         if (!hasData)

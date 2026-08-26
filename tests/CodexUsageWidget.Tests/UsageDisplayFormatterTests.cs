@@ -45,6 +45,21 @@ public sealed class UsageDisplayFormatterTests
     }
 
     [Fact]
+    public void IncludesTodayAndYesterdayUsageInTooltip()
+    {
+        var details = UsageDisplayFormatter.FormatTooltipDetails(
+            "80%",
+            "60%",
+            todayTokens: 10_000_000,
+            yesterdayTokens: 200_000_000,
+            sevenDayTokens: 300_000_000,
+            thirtyDayTokens: 400_000_000,
+            refreshedAt: new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero));
+
+        Assert.Contains("用量：当日10M  昨日200M", details);
+    }
+
+    [Fact]
     public void FormatsResetTimeWithRemainingHours()
     {
         var now = new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.Zero);

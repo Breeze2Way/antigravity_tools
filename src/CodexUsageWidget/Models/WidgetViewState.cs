@@ -14,4 +14,6 @@ public sealed record WidgetViewState(
     public DateTimeOffset? FiveHourResetAt { get; init; }
     public DateTimeOffset? WeeklyResetAt { get; init; }
     public double RecentTokensPerMinute { get; init; }
+    public long TodayTokens { get; init; }
+    public long YesterdayTokens { get; init; }
 }
