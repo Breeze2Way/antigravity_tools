@@ -114,6 +114,17 @@ public partial class MainWindow : Window
         Opacity = settings.Opacity;
     }
 
+    private void RestoreWindow()
+    {
+        WindowState = WindowRestorePolicy.GetRestoredState(WindowState);
+        if (!IsVisible)
+        {
+            Show();
+        }
+
+        Activate();
+    }
+
     private void PositionWindow()
     {
         var workArea = GetCurrentWorkArea();
@@ -342,7 +353,13 @@ public partial class MainWindow : Window
         AddTrayMenuItem(menu, "打开官方用量", (_, _) => Dispatcher.Invoke(OpenOfficialUsage));
         AddTrayMenuItem(menu, "退出", (_, _) => Dispatcher.Invoke(Close));
         trayIcon.ContextMenuStrip = menu;
-        trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowDashboard);
+        trayIcon.MouseClick += (_, args) =>
+        {
+            if (args.Button == Forms.MouseButtons.Left)
+            {
+                Dispatcher.Invoke(ShowDashboard);
+            }
+        };
     }
 
     private static BitmapImage? LoadWindowIcon()
@@ -372,6 +389,7 @@ public partial class MainWindow : Window
 
     private void ShowSettings()
     {
+        RestoreWindow();
         if (SettingsPanel.Visibility != Visibility.Visible)
         {
             dashboardPosition = new System.Windows.Point(Left, Top);
@@ -405,6 +423,7 @@ public partial class MainWindow : Window
 
     private void ShowDashboard()
     {
+        RestoreWindow();
         SettingsPanel.Visibility = Visibility.Collapsed;
         DashboardPanel.Visibility = Visibility.Visible;
         Width = BallWindowSize;

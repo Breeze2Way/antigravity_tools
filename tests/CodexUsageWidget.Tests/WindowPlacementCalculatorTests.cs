@@ -9,6 +9,12 @@ public sealed class WindowPlacementCalculatorTests
     private static readonly Size SettingsSize = new(360, 245);
 
     [Fact]
+    public void RestoresMinimizedWindowToNormalState()
+    {
+        Assert.Equal(WindowState.Normal, WindowRestorePolicy.GetRestoredState(WindowState.Minimized));
+    }
+
+    [Fact]
     public void PlacesSettingsToLeftWhenBallIsAtRightEdge()
     {
         var ball = new Rect(1852, 24, 68, 68);
