@@ -342,7 +342,7 @@ public sealed class WaterBallControl : FrameworkElement
             return;
         }
 
-        var activeColor = WaterBallDisplay.GetInvertedColor(colorSourcePercent);
+        var activeColor = WaterBallDisplay.GetSoftComplementaryColor(colorSourcePercent);
         var activeBrush = new SolidColorBrush(ToMediaColor(activeColor, opacity));
         var activePen = new MediaPen(activeBrush, thickness)
         {
