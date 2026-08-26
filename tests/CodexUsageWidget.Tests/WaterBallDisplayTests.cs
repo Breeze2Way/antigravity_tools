@@ -46,6 +46,12 @@ public sealed class WaterBallDisplayTests
         Assert.Null(WaterBallDisplay.GetRingSweepAngle(null));
     }
 
+    [Fact]
+    public void KeepsInnerWaterCloseToOuterRing()
+    {
+        Assert.Equal(27, WaterBallDisplay.GetInnerWaterRadius(31), precision: 6);
+    }
+
     [Theory]
     [InlineData(20.0, true)]
     [InlineData(20.1, false)]

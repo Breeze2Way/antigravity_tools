@@ -203,7 +203,7 @@ public sealed class WaterBallControl : FrameworkElement
         DrawInnerWater(
             drawingContext,
             center,
-            radius - 10.5,
+            WaterBallDisplay.GetInnerWaterRadius(radius),
             fiveHourRemainingPercent);
 
         DrawProgressRing(

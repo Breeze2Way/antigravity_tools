@@ -38,6 +38,11 @@ public static class WaterBallDisplay
         return HasFinitePercent(remainingPercent);
     }
 
+    public static double GetInnerWaterRadius(double outerRadius)
+    {
+        return Math.Max(0, outerRadius - 4);
+    }
+
     public static string FormatCenterText(double? remainingPercent)
     {
         if (!HasFinitePercent(remainingPercent))
