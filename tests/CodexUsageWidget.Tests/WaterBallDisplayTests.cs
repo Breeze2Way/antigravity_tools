@@ -21,6 +21,24 @@ public sealed class WaterBallDisplayTests
     }
 
     [Theory]
+    [InlineData(0, 0)]
+    [InlineData(25, 90)]
+    [InlineData(50, 180)]
+    [InlineData(100, 360)]
+    [InlineData(-10, 0)]
+    [InlineData(140, 360)]
+    public void MapsRemainingPercentageToRingSweep(double percentage, double expected)
+    {
+        Assert.Equal(expected, WaterBallDisplay.GetRingSweepAngle(percentage)!.Value, precision: 6);
+    }
+
+    [Fact]
+    public void MissingRemainingPercentageProducesNoRingSweep()
+    {
+        Assert.Null(WaterBallDisplay.GetRingSweepAngle(null));
+    }
+
+    [Theory]
     [InlineData(20.0, true)]
     [InlineData(20.1, false)]
     [InlineData(null, false)]

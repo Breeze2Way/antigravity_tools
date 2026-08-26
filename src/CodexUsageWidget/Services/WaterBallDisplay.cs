@@ -23,6 +23,16 @@ public static class WaterBallDisplay
         return Math.Clamp(remainingPercent!.Value, 0, 100) / 100d;
     }
 
+    public static double? GetRingSweepAngle(double? remainingPercent)
+    {
+        if (!HasFinitePercent(remainingPercent))
+        {
+            return null;
+        }
+
+        return Math.Clamp(remainingPercent!.Value, 0, 100) * 3.6;
+    }
+
     public static string FormatCenterText(double? remainingPercent)
     {
         if (!HasFinitePercent(remainingPercent))

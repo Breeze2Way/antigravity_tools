@@ -16,19 +16,11 @@ namespace CodexUsageWidget.Controls;
 
 public sealed class WaterBallControl : FrameworkElement
 {
-    private static readonly (double X, double Y, double Size)[] BubbleLayout =
-    [
-        (-0.28, 0.18, 1.2),
-        (0.24, 0.28, 1.8),
-        (-0.10, 0.42, 1.0),
-        (0.35, 0.55, 1.3),
-        (-0.34, 0.64, 1.5)
-    ];
-
     private double? remainingPercent;
+    private double? fiveHourRemainingPercent;
+    private double? weeklyRemainingPercent;
     private string centerText = "--";
     private double tokensPerMinute;
-    private double wavePhase;
     private double animationTime;
     private long lastRenderTimestamp;
     private readonly DispatcherTimer animationTimer;
@@ -124,6 +116,36 @@ public sealed class WaterBallControl : FrameworkElement
         }
     }
 
+    public double? FiveHourRemainingPercent
+    {
+        get => fiveHourRemainingPercent;
+        set
+        {
+            if (Nullable.Equals(fiveHourRemainingPercent, value))
+            {
+                return;
+            }
+
+            fiveHourRemainingPercent = value;
+            InvalidateVisual();
+        }
+    }
+
+    public double? WeeklyRemainingPercent
+    {
+        get => weeklyRemainingPercent;
+        set
+        {
+            if (Nullable.Equals(weeklyRemainingPercent, value))
+            {
+                return;
+            }
+
+            weeklyRemainingPercent = value;
+            InvalidateVisual();
+        }
+    }
+
     protected override AutomationPeer OnCreateAutomationPeer()
     {
         return new WaterBallAutomationPeer(this);
@@ -141,13 +163,10 @@ public sealed class WaterBallControl : FrameworkElement
 
         var center = new WpfPoint(ActualWidth / 2, ActualHeight / 2);
         var radius = Math.Max(0, size / 2 - 3);
-        var bucketGeometry = new EllipseGeometry(center, radius, radius);
         var color = WaterBallDisplay.GetColor(remainingPercent);
         var glowOpacity = WaterBallEffects.GetGlowOpacity(remainingPercent, tokensPerMinute, isHovered);
         var alertPulse = WaterBallEffects.GetAlertPulse(remainingPercent, animationTime * 0.35);
         var shellOpacity = WaterBallEffects.GetShellOpacity(remainingPercent, isHovered);
-        var waterBrush = new SolidColorBrush(ToMediaColor(color));
-        var waterHighlight = new SolidColorBrush(Lighten(color, 0.35));
         var rimBrush = new SolidColorBrush(Lighten(color, 0.55));
         var shellBrush = new SolidColorBrush(
             ToMediaColor(WaterBallDisplay.GetBackgroundColor(remainingPercent), shellOpacity));
@@ -172,94 +191,97 @@ public sealed class WaterBallControl : FrameworkElement
             radius * 0.17,
             radius * 0.08);
 
-        var fillRatio = WaterBallDisplay.GetFillRatio(remainingPercent);
-        if (fillRatio.HasValue && radius > 0)
+        DrawProgressRing(
+            drawingContext,
+            center,
+            radius - 1.5,
+            weeklyRemainingPercent,
+            thickness: 2.2,
+            opacity: 0.88 + alertPulse * 0.08);
+        DrawProgressRing(
+            drawingContext,
+            center,
+            radius - 8.0,
+            fiveHourRemainingPercent,
+            thickness: 4.2,
+            opacity: 0.94 + alertPulse * 0.12);
+
+        DrawCenterText(drawingContext, center, radius);
+    }
+
+    private static void DrawProgressRing(
+        DrawingContext drawingContext,
+        WpfPoint center,
+        double radius,
+        double? remainingPercent,
+        double thickness,
+        double opacity)
+    {
+        if (radius <= 0)
         {
-            var diameter = radius * 2;
-            var waterTop = center.Y + radius - diameter * fillRatio.Value;
-            var waterRect = new Rect(center.X - radius, waterTop, diameter, diameter);
-
-            drawingContext.PushClip(bucketGeometry);
-            drawingContext.DrawRectangle(waterBrush, null, waterRect);
-
-            var amplitude = WaterWaveDisplay.GetAmplitude(tokensPerMinute, radius);
-            var frequency = WaterWaveDisplay.GetFrequency(tokensPerMinute);
-            var wave = CreateWaveGeometry(
-                center,
-                radius,
-                waterTop,
-                amplitude,
-                frequency,
-                wavePhase,
-                amplitudeScale: 1);
-            drawingContext.DrawGeometry(waterBrush, null, wave);
-
-            var highlightWave = CreateWaveGeometry(
-                center,
-                radius,
-                waterTop,
-                amplitude,
-                frequency * 1.35,
-                -wavePhase * 0.75 + 1.2,
-                amplitudeScale: 0.32,
-                fill: false);
-            drawingContext.DrawGeometry(
-                null,
-                new MediaPen(waterHighlight, 1.1),
-                highlightWave);
-
-            var waterlineHighlight = new SolidColorBrush(
-                MediaColor.FromArgb(72, 255, 255, 255));
-            var softHighlightWave = CreateWaveGeometry(
-                center,
-                radius,
-                waterTop - 0.6,
-                amplitude,
-                frequency * 0.82,
-                wavePhase * 0.55 + 0.7,
-                amplitudeScale: 0.52,
-                fill: false);
-            drawingContext.DrawGeometry(
-                null,
-                new MediaPen(waterlineHighlight, 0.75),
-                softHighlightWave);
-
-            var usageFactor = Math.Clamp(tokensPerMinute / 220_000d, 0, 1);
-            for (var index = 0; index < BubbleLayout.Length; index++)
-            {
-                var bubble = BubbleLayout[index];
-                var visibility = WaterBallEffects.GetBubbleVisibility(
-                    remainingPercent,
-                    tokensPerMinute,
-                    index,
-                    animationTime);
-                if (visibility <= 0)
-                {
-                    continue;
-                }
-
-                var rise = (animationTime * (0.08 + usageFactor * 0.16) + index * 0.23) % 0.72;
-                var bubbleCenter = new WpfPoint(
-                    center.X + bubble.X * radius,
-                    center.Y + radius - (0.25 + ((bubble.Y + rise) % 0.72)) * radius * 1.5);
-                var bubbleBrush = new SolidColorBrush(
-                    MediaColor.FromArgb(
-                        (byte)Math.Round(Math.Clamp(visibility * 0.55, 0, 1) * 255),
-                        255,
-                        255,
-                        255));
-                drawingContext.DrawEllipse(
-                    null,
-                    new MediaPen(bubbleBrush, 0.75),
-                    bubbleCenter,
-                    bubble.Size,
-                    bubble.Size);
-            }
-
-            drawingContext.Pop();
+            return;
         }
 
-        DrawCenterText(drawingContext, center, radius, rimBrush);
+        var trackBrush = new SolidColorBrush(MediaColor.FromArgb(72, 172, 190, 208));
+        drawingContext.DrawEllipse(
+            null,
+            new MediaPen(trackBrush, thickness),
+            center,
+            radius,
+            radius);
+
+        var sweepAngle = WaterBallDisplay.GetRingSweepAngle(remainingPercent);
+        if (!sweepAngle.HasValue || sweepAngle.Value <= 0)
+        {
+            return;
+        }
+
+        var activeColor = WaterBallDisplay.GetColor(remainingPercent);
+        var activeBrush = new SolidColorBrush(ToMediaColor(activeColor, opacity));
+        var activePen = new MediaPen(activeBrush, thickness)
+        {
+            StartLineCap = PenLineCap.Round,
+            EndLineCap = PenLineCap.Round
+        };
+        if (sweepAngle.Value >= 359.5)
+        {
+            drawingContext.DrawEllipse(null, activePen, center, radius, radius);
+            return;
+        }
+
+        drawingContext.DrawGeometry(
+            null,
+            activePen,
+            CreateArcGeometry(center, radius, sweepAngle.Value));
+    }
+
+    private static StreamGeometry CreateArcGeometry(
+        WpfPoint center,
+        double radius,
+        double sweepAngle)
+    {
+        var start = PointOnCircle(center, radius, -90);
+        var end = PointOnCircle(center, radius, -90 + sweepAngle);
+        var geometry = new StreamGeometry();
+        using var context = geometry.Open();
+        context.BeginFigure(start, isFilled: false, isClosed: false);
+        context.ArcTo(
+            end,
+            new System.Windows.Size(radius, radius),
+            rotationAngle: 0,
+            isLargeArc: sweepAngle > 180,
+            SweepDirection.Clockwise,
+            isStroked: true,
+            isSmoothJoin: true);
+        return geometry;
+    }
+
+    private static WpfPoint PointOnCircle(WpfPoint center, double radius, double angle)
+    {
+        var radians = angle * Math.PI / 180;
+        return new WpfPoint(
+            center.X + Math.Cos(radians) * radius,
+            center.Y + Math.Sin(radians) * radius);
     }
 
     private static MediaColor ToMediaColor(WaterBallColor color)
@@ -292,8 +314,7 @@ public sealed class WaterBallControl : FrameworkElement
     private void DrawCenterText(
         DrawingContext drawingContext,
         System.Windows.Point center,
-        double radius,
-        System.Windows.Media.Brush foreground)
+        double radius)
     {
         var fontSize = Math.Max(14, radius * 0.42);
         var formattedText = new FormattedText(
@@ -312,55 +333,6 @@ public sealed class WaterBallControl : FrameworkElement
             WaterBallDisplay.GetCenteredTextOrigin(center.X, formattedText.Width),
             center.Y - formattedText.Height / 2);
         drawingContext.DrawText(formattedText, origin);
-        drawingContext.DrawEllipse(null, new MediaPen(foreground, 0.8), center, radius - 4, radius - 4);
-    }
-
-    private static StreamGeometry CreateWaveGeometry(
-        WpfPoint center,
-        double radius,
-        double waterTop,
-        double amplitude,
-        double frequency,
-        double phase,
-        double amplitudeScale,
-        bool fill = true)
-    {
-        var left = center.X - radius;
-        var right = center.X + radius;
-        var bottom = center.Y + radius;
-        var segments = 24;
-        var geometry = new StreamGeometry();
-        using var context = geometry.Open();
-        var offset = WaveOffset(0, amplitude, frequency, phase) * amplitudeScale;
-        context.BeginFigure(new WpfPoint(left, waterTop + offset), fill, fill);
-        for (var index = 1; index <= segments; index++)
-        {
-            var normalizedX = index / (double)segments;
-            offset = WaveOffset(normalizedX, amplitude, frequency, phase) * amplitudeScale;
-            context.LineTo(
-                new WpfPoint(left + (right - left) * normalizedX, waterTop + offset),
-                true,
-                false);
-        }
-
-        if (fill)
-        {
-            context.LineTo(new WpfPoint(right, bottom), true, false);
-            context.LineTo(new WpfPoint(left, bottom), true, false);
-        }
-
-        return geometry;
-    }
-
-    private static double WaveOffset(
-        double normalizedX,
-        double amplitude,
-        double frequency,
-        double phase)
-    {
-        var primary = Math.Sin(normalizedX * Math.PI * 2 * frequency + phase);
-        var secondary = Math.Sin(normalizedX * Math.PI * 2 * frequency * 0.47 - phase * 0.63 + 1.1);
-        return primary * amplitude + secondary * amplitude * 0.28;
     }
 
     private void Control_Loaded(object sender, RoutedEventArgs e)
@@ -407,7 +379,6 @@ public sealed class WaterBallControl : FrameworkElement
 
         var frameSeconds = Math.Min(elapsed, 0.1);
         animationTime += frameSeconds;
-        wavePhase += WaterWaveDisplay.GetSpeed(tokensPerMinute) * frameSeconds;
         InvalidateVisual();
     }
 

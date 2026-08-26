@@ -198,6 +198,8 @@ public partial class MainWindow : Window
         var weeklyText = WaterBallDisplay.FormatCenterText(state.OfficialRemainingPercent);
         var centerPercent = state.FiveHourRemainingPercent ?? state.OfficialRemainingPercent;
         var centerText = WaterBallDisplay.FormatCenterText(centerPercent);
+        waterBall.FiveHourRemainingPercent = state.FiveHourRemainingPercent;
+        waterBall.WeeklyRemainingPercent = state.OfficialRemainingPercent;
         waterBall.RemainingPercent = centerPercent;
         waterBall.TokensPerMinute = state.RecentTokensPerMinute;
         waterBall.CenterText = centerText;
