@@ -10,6 +10,14 @@ public sealed class WaterBallDisplayTests
     }
 
     [Theory]
+    [InlineData(null, false)]
+    [InlineData(42d, true)]
+    public void OnlyAvailableFiveHourLimitProducesInnerWater(double? remainingPercent, bool expected)
+    {
+        Assert.Equal(expected, WaterBallDisplay.HasInnerWater(remainingPercent));
+    }
+
+    [Theory]
     [InlineData(0, 0)]
     [InlineData(53, 0.53)]
     [InlineData(100, 1)]

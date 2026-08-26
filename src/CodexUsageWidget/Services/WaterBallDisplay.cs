@@ -33,6 +33,11 @@ public static class WaterBallDisplay
         return Math.Clamp(remainingPercent!.Value, 0, 100) * 3.6;
     }
 
+    public static bool HasInnerWater(double? remainingPercent)
+    {
+        return HasFinitePercent(remainingPercent);
+    }
+
     public static string FormatCenterText(double? remainingPercent)
     {
         if (!HasFinitePercent(remainingPercent))
