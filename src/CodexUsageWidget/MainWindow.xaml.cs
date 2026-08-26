@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -7,6 +8,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using Forms = System.Windows.Forms;
@@ -38,6 +40,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer resetCountdownTimer;
     private readonly UsageFileWatcher usageFileWatcher;
     private Forms.NotifyIcon trayIcon = null!;
+    private System.Drawing.Icon? applicationIcon;
     private WidgetSettings settings;
     private bool isRefreshing;
     private bool localRefreshPending;
@@ -48,6 +51,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Icon = LoadWindowIcon();
         waterBall.Width = WaterBallSize;
         waterBall.Height = WaterBallSize;
         waterBall.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
@@ -101,6 +105,7 @@ public partial class MainWindow : Window
         settingsStore.Save(settings with { Left = savedPosition.X, Top = savedPosition.Y });
         trayIcon.Visible = false;
         trayIcon.Dispose();
+        applicationIcon?.Dispose();
     }
 
     private void ConfigureWindow()
@@ -311,9 +316,15 @@ public partial class MainWindow : Window
 
     private void ConfigureTrayIcon()
     {
+        var iconPath = AppIcon.GetPath(AppContext.BaseDirectory);
+        if (File.Exists(iconPath))
+        {
+            applicationIcon = new System.Drawing.Icon(iconPath);
+        }
+
         trayIcon = new Forms.NotifyIcon
         {
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = applicationIcon ?? System.Drawing.SystemIcons.Application,
             Text = "Codex 剩余用量",
             Visible = true
         };
@@ -332,6 +343,14 @@ public partial class MainWindow : Window
         AddTrayMenuItem(menu, "退出", (_, _) => Dispatcher.Invoke(Close));
         trayIcon.ContextMenuStrip = menu;
         trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowDashboard);
+    }
+
+    private static BitmapImage? LoadWindowIcon()
+    {
+        var iconPath = AppIcon.GetPath(AppContext.BaseDirectory);
+        return File.Exists(iconPath)
+            ? new BitmapImage(new Uri(iconPath, UriKind.Absolute))
+            : null;
     }
 
     private static void AddTrayMenuItem(
