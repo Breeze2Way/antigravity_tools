@@ -211,7 +211,7 @@ public sealed class WaterBallControl : FrameworkElement
             center,
             radius - 1.5,
             weeklyRemainingPercent,
-            thickness: 2.2,
+            thickness: WaterBallDisplay.WeeklyRingThickness,
             opacity: 0.88 + alertPulse * 0.08);
 
         DrawCenterText(drawingContext, center, radius);

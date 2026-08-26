@@ -6,6 +6,8 @@ public readonly record struct WaterBallColor(byte Red, byte Green, byte Blue);
 
 public static class WaterBallDisplay
 {
+    public const double WeeklyRingThickness = 4.4;
+
     private static readonly WaterBallColor NeutralColor = new(128, 140, 153);
     private static readonly WaterBallColor RedColor = new(239, 68, 68);
     private static readonly WaterBallColor YellowColor = new(250, 204, 21);

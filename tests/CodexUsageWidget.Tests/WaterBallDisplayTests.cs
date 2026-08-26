@@ -52,6 +52,12 @@ public sealed class WaterBallDisplayTests
         Assert.Equal(27, WaterBallDisplay.GetInnerWaterRadius(31), precision: 6);
     }
 
+    [Fact]
+    public void DoublesWeeklyRingThickness()
+    {
+        Assert.Equal(4.4, WaterBallDisplay.WeeklyRingThickness, precision: 6);
+    }
+
     [Theory]
     [InlineData(20.0, true)]
     [InlineData(20.1, false)]
