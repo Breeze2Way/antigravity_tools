@@ -2,6 +2,14 @@ namespace CodexUsageWidget.Tests;
 
 public sealed class OfficialUsageReaderTests
 {
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1234, true)]
+    public void InspectsOnlyProcessesWithMainWindows(long handle, bool expected)
+    {
+        Assert.Equal(expected, OfficialUsageReader.ShouldInspectProcess(new IntPtr(handle)));
+    }
+
     [Fact]
     public void BoundsUiAutomationPollingToLimitCpuBursts()
     {

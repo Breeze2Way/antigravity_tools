@@ -117,11 +117,36 @@ public sealed class OfficialUsageReader
         return false;
     }
 
+    internal static bool ShouldInspectProcess(IntPtr mainWindowHandle)
+    {
+        return mainWindowHandle != IntPtr.Zero;
+    }
+
     private static IEnumerable<Process> GetChatGptProcesses()
     {
         try
         {
-            return Process.GetProcessesByName(ProcessName);
+            var inspectableProcesses = new List<Process>();
+            foreach (var process in Process.GetProcessesByName(ProcessName))
+            {
+                try
+                {
+                    if (ShouldInspectProcess(process.MainWindowHandle))
+                    {
+                        inspectableProcesses.Add(process);
+                    }
+                    else
+                    {
+                        process.Dispose();
+                    }
+                }
+                catch
+                {
+                    process.Dispose();
+                }
+            }
+
+            return inspectableProcesses;
         }
         catch
         {
