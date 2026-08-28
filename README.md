@@ -34,6 +34,8 @@ A compact Windows floating widget that visualizes Codex five-hour and weekly rem
   本地文件变化会刷新 7 天/30 天统计，旧版官方读取器仅保留为可选备用方式。
 - Left-drag moves the widget; right-click opens refresh, settings, official usage, and exit actions.
   左键拖动窗口，右键打开刷新、设置、官方用量和退出菜单。
+- The right-click menu supports hot switching between Chinese and English, including the settings panel and tray menu.
+  右键菜单支持中英文热切换，设置面板和托盘菜单会同步更新。
 
 ## Performance / 性能
 

@@ -42,6 +42,11 @@ public partial class MainWindow : Window
     private readonly UsageFileWatcher usageFileWatcher;
     private readonly UserActivityMonitor userActivityMonitor = new();
     private Forms.NotifyIcon trayIcon = null!;
+    private Forms.ToolStripMenuItem trayRefreshMenuItem = null!;
+    private Forms.ToolStripMenuItem traySettingsMenuItem = null!;
+    private Forms.ToolStripMenuItem trayOfficialUsageMenuItem = null!;
+    private Forms.ToolStripMenuItem trayLanguageMenuItem = null!;
+    private Forms.ToolStripMenuItem trayExitMenuItem = null!;
     private System.Drawing.Icon? applicationIcon;
     private WidgetSettings settings;
     private bool isRefreshing;
@@ -93,6 +98,7 @@ public partial class MainWindow : Window
         usageFileWatcher.Changed += UsageFileWatcher_Changed;
         ConfigureWindow();
         ConfigureTrayIcon();
+        ApplyLanguage();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -385,10 +391,11 @@ public partial class MainWindow : Window
             ShowImageMargin = false,
             Font = new System.Drawing.Font("Microsoft YaHei UI", 9F)
         };
-        AddTrayMenuItem(menu, "刷新", (_, _) => Dispatcher.Invoke(RefreshAsync));
-        AddTrayMenuItem(menu, "设置", (_, _) => Dispatcher.Invoke(ShowSettings));
-        AddTrayMenuItem(menu, "打开官方用量", (_, _) => Dispatcher.Invoke(OpenOfficialUsage));
-        AddTrayMenuItem(menu, "退出", (_, _) => Dispatcher.Invoke(Close));
+        trayRefreshMenuItem = AddTrayMenuItem(menu, "刷新", (_, _) => Dispatcher.Invoke(RefreshAsync));
+        traySettingsMenuItem = AddTrayMenuItem(menu, "设置", (_, _) => Dispatcher.Invoke(ShowSettings));
+        trayOfficialUsageMenuItem = AddTrayMenuItem(menu, "打开官方用量", (_, _) => Dispatcher.Invoke(OpenOfficialUsage));
+        trayLanguageMenuItem = AddTrayMenuItem(menu, "English", (_, _) => Dispatcher.Invoke(ToggleLanguage));
+        trayExitMenuItem = AddTrayMenuItem(menu, "退出", (_, _) => Dispatcher.Invoke(Close));
         trayIcon.ContextMenuStrip = menu;
         trayIcon.MouseClick += (_, args) =>
         {
@@ -407,7 +414,7 @@ public partial class MainWindow : Window
             : null;
     }
 
-    private static void AddTrayMenuItem(
+    private static Forms.ToolStripMenuItem AddTrayMenuItem(
         Forms.ContextMenuStrip menu,
         string text,
         EventHandler click)
@@ -418,6 +425,7 @@ public partial class MainWindow : Window
         };
         item.Click += click;
         menu.Items.Add(item);
+        return item;
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => RefreshAsync();
@@ -484,21 +492,25 @@ public partial class MainWindow : Window
         var budget = 0L;
         var hasBudget = !string.IsNullOrWhiteSpace(WeeklyBudgetBox.Text);
         if ((hasBudget &&
-             (!long.TryParse(WeeklyBudgetBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out budget) || budget <= 0)) ||
+            (!long.TryParse(WeeklyBudgetBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out budget) || budget <= 0)) ||
             !int.TryParse(RefreshSecondsBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var refreshSeconds))
         {
-            System.Windows.MessageBox.Show("周额度和刷新间隔必须是有效数字。", "设置无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowLocalizedMessage(
+                "周额度和刷新间隔必须是有效数字。",
+                "Weekly budget and refresh interval must be valid numbers.",
+                "设置无效",
+                "Invalid settings");
             return;
         }
 
         if (!ColorParser.TryParseHex(WeeklyRingStartColorBox.Text, out var startColor) ||
             !ColorParser.TryParseHex(WeeklyRingEndColorBox.Text, out var endColor))
         {
-            System.Windows.MessageBox.Show(
+            ShowLocalizedMessage(
                 "外圈颜色必须是有效的十六进制颜色，例如 #58B7E8。",
+                "Ring colors must be valid hexadecimal colors, for example #58B7E8.",
                 "设置无效",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+                "Invalid settings");
             return;
         }
 
@@ -610,6 +622,87 @@ public partial class MainWindow : Window
         waterBall.WeeklyRingStartColor = startColor;
         waterBall.WeeklyRingEndColor = endColor;
         waterBall.WeeklyRingGradientEnabled = settings.WeeklyRingGradientEnabled;
+    }
+
+    private void Language_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleLanguage();
+    }
+
+    private void ToggleLanguage()
+    {
+        settings = SettingsStore.Normalize(settings with
+        {
+            Language = WidgetLanguage.IsEnglish(settings.Language)
+                ? WidgetLanguage.Chinese
+                : WidgetLanguage.English
+        });
+        settingsStore.Save(settings);
+        ApplyLanguage();
+    }
+
+    private void ApplyLanguage()
+    {
+        var isEnglish = WidgetLanguage.IsEnglish(settings.Language);
+        Title = isEnglish ? "Codex Usage" : "Codex 剩余用量";
+
+        RefreshMenuItem.Header = isEnglish ? "Refresh" : "刷新";
+        SettingsMenuItem.Header = isEnglish ? "Settings" : "设置";
+        OfficialUsageMenuItem.Header = isEnglish ? "Open official usage" : "打开官方用量";
+        LanguageMenuItem.Header = isEnglish ? "切换到中文" : "Switch to English";
+        ExitMenuItem.Header = isEnglish ? "Exit" : "退出";
+
+        SettingsTitleText.Text = isEnglish ? "Widget settings" : "小工具设置";
+        SettingsSubtitleText.Text = isEnglish
+            ? "Adjust refresh and ring appearance"
+            : "调整数据刷新与外圈显示样式";
+        DataRefreshSectionText.Text = isEnglish ? "Data and refresh" : "数据与刷新";
+        WeeklyBudgetLabel.Text = isEnglish ? "Weekly budget (optional)" : "周额度（可选 token）";
+        RefreshIntervalLabel.Text = isEnglish ? "Refresh interval (seconds)" : "刷新间隔（秒）";
+        OpacityLabel.Text = isEnglish ? "Window opacity" : "窗口不透明度";
+        RingStyleSectionText.Text = isEnglish ? "Ring style" : "外圈样式";
+        RingModeLabel.Text = isEnglish ? "Color mode" : "颜色模式";
+        SolidModeItem.Content = isEnglish ? "Solid" : "纯色";
+        GradientModeItem.Content = isEnglish ? "Gradient" : "渐变色";
+        StartColorLabel.Text = isEnglish ? "Start color" : "起始颜色";
+        EndColorLabel.Text = isEnglish ? "End color" : "结束颜色";
+        ColorHintText.Text = isEnglish
+            ? "Use #RRGGBB, for example #58B7E8. Solid mode uses the start color."
+            : "支持 #RRGGBB，例如 #58B7E8；纯色模式只使用起始颜色。";
+        TopmostBox.Content = isEnglish ? "Always on top" : "窗口置顶";
+        AutoStartBox.Content = isEnglish ? "Start with Windows" : "开机启动";
+        CancelButton.Content = isEnglish ? "Cancel" : "取消";
+        SaveButton.Content = isEnglish ? "Save settings" : "保存设置";
+        WeeklyBudgetBox.ToolTip = isEnglish
+            ? "Leave blank to avoid setting a manual weekly budget."
+            : "留空表示不手动设置周额度";
+        RefreshSecondsBox.ToolTip = isEnglish
+            ? "Official usage query interval, from 10 to 600 seconds."
+            : "官方用量查询间隔，范围 10–600 秒";
+
+        if (trayRefreshMenuItem is not null)
+        {
+            trayRefreshMenuItem.Text = isEnglish ? "Refresh" : "刷新";
+            traySettingsMenuItem.Text = isEnglish ? "Settings" : "设置";
+            trayOfficialUsageMenuItem.Text = isEnglish ? "Open official usage" : "打开官方用量";
+            trayLanguageMenuItem.Text = isEnglish ? "切换到中文" : "Switch to English";
+            trayExitMenuItem.Text = isEnglish ? "Exit" : "退出";
+            trayIcon.Text = isEnglish ? "Codex Usage" : "Codex 剩余用量";
+        }
+    }
+
+    private void ShowLocalizedMessage(
+        string chineseMessage,
+        string englishMessage,
+        string chineseTitle,
+        string englishTitle)
+    {
+        var isEnglish = WidgetLanguage.IsEnglish(settings.Language);
+        System.Windows.MessageBox.Show(
+            isEnglish ? englishMessage : chineseMessage,
+            isEnglish ? englishTitle : chineseTitle,
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
     }
 
     private static void SetAutoStart(bool enabled)

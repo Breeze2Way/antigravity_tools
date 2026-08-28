@@ -80,11 +80,12 @@
                      Padding="4"
                      FontSize="13"
                      HasDropShadow="True">
-            <MenuItem Header="刷新" Click="Refresh_Click" Padding="10,6" />
-            <MenuItem Header="设置" Click="Settings_Click" Padding="10,6" />
+            <MenuItem x:Name="RefreshMenuItem" Header="刷新" Click="Refresh_Click" Padding="10,6" />
+            <MenuItem x:Name="SettingsMenuItem" Header="设置" Click="Settings_Click" Padding="10,6" />
             <Separator />
-            <MenuItem Header="打开官方用量" Click="OfficialUsage_Click" Padding="10,6" />
-            <MenuItem Header="退出" Click="Exit_Click" Padding="10,6" />
+            <MenuItem x:Name="OfficialUsageMenuItem" Header="打开官方用量" Click="OfficialUsage_Click" Padding="10,6" />
+            <MenuItem x:Name="LanguageMenuItem" Header="English" Click="Language_Click" Padding="10,6" />
+            <MenuItem x:Name="ExitMenuItem" Header="退出" Click="Exit_Click" Padding="10,6" />
         </ContextMenu>
     </Window.ContextMenu>
 
@@ -126,18 +127,21 @@
                           Cursor="SizeAll"
                           MouseLeftButtonDown="SettingsHeader_MouseLeftButtonDown">
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="小工具设置"
+                            <TextBlock x:Name="SettingsTitleText"
+                                       Text="小工具设置"
                                        Foreground="#0F172A"
                                        FontSize="18"
                                        FontWeight="SemiBold" />
-                            <TextBlock Text="调整数据刷新与外圈显示样式"
+                            <TextBlock x:Name="SettingsSubtitleText"
+                                       Text="调整数据刷新与外圈显示样式"
                                        Margin="0,3,0,0"
                                        Foreground="#64748B"
                                        FontSize="11" />
                         </StackPanel>
                     </Grid>
 
-                    <TextBlock Grid.Row="1"
+                    <TextBlock x:Name="DataRefreshSectionText"
+                               Grid.Row="1"
                                Text="数据与刷新"
                                Foreground="#0E7490"
                                FontSize="12"
@@ -153,14 +157,16 @@
                             <ColumnDefinition Width="132" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="周额度（可选 token）"
+                        <TextBlock x:Name="WeeklyBudgetLabel"
+                                   Text="周额度（可选 token）"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
                         <TextBox x:Name="WeeklyBudgetBox"
                                  Grid.Column="1"
                                  Style="{StaticResource SettingsTextBoxStyle}"
                                  ToolTip="留空表示不手动设置周额度" />
-                        <TextBlock Grid.Row="1"
+                        <TextBlock x:Name="RefreshIntervalLabel"
+                                   Grid.Row="1"
                                    Text="刷新间隔（秒）"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
@@ -169,8 +175,9 @@
                                  Grid.Column="1"
                                  Style="{StaticResource SettingsTextBoxStyle}"
                                  ToolTip="官方用量查询间隔，范围 10–600 秒" />
-                        <TextBlock Grid.Row="2"
-                                   Text="窗口透明度"
+                        <TextBlock x:Name="OpacityLabel"
+                                   Grid.Row="2"
+                                   Text="窗口不透明度"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
                         <Grid Grid.Row="2" Grid.Column="1" Margin="8,0,0,0">
@@ -203,7 +210,8 @@
                         </Grid>
                     </Grid>
 
-                    <TextBlock Grid.Row="4"
+                    <TextBlock x:Name="RingStyleSectionText"
+                               Grid.Row="4"
                                Text="外圈样式"
                                Foreground="#0E7490"
                                FontSize="12"
@@ -219,17 +227,19 @@
                             <ColumnDefinition Width="132" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="颜色模式"
+                        <TextBlock x:Name="RingModeLabel"
+                                   Text="颜色模式"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
                         <ComboBox x:Name="WeeklyRingModeBox"
                                   Grid.Column="1"
                                   Style="{StaticResource SettingsComboBoxStyle}"
                                   SelectionChanged="WeeklyRingMode_SelectionChanged">
-                            <ComboBoxItem Content="纯色" />
-                            <ComboBoxItem Content="渐变色" />
+                            <ComboBoxItem x:Name="SolidModeItem" Content="纯色" />
+                            <ComboBoxItem x:Name="GradientModeItem" Content="渐变色" />
                         </ComboBox>
-                        <TextBlock Grid.Row="1"
+                        <TextBlock x:Name="StartColorLabel"
+                                   Grid.Row="1"
                                    Text="起始颜色"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
@@ -258,7 +268,8 @@
                                     BorderThickness="1"
                                     CornerRadius="4" />
                         </Grid>
-                        <TextBlock Grid.Row="2"
+                        <TextBlock x:Name="EndColorLabel"
+                                   Grid.Row="2"
                                    Text="结束颜色"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
@@ -290,7 +301,8 @@
                     </Grid>
 
                     <Grid Grid.Row="6" Margin="0,4,0,0">
-                        <TextBlock Text="支持 #RRGGBB，例如 #58B7E8；纯色模式只使用起始颜色。"
+                        <TextBlock x:Name="ColorHintText"
+                                   Text="支持 #RRGGBB，例如 #58B7E8；纯色模式只使用起始颜色。"
                                    Foreground="#64748B"
                                    FontSize="11"
                                    VerticalAlignment="Center" />
@@ -312,10 +324,12 @@
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Bottom">
-                        <Button Content="取消"
+                        <Button x:Name="CancelButton"
+                                Content="取消"
                                 Click="SettingsCancel_Click"
                                 Style="{StaticResource SettingsButtonStyle}" />
-                        <Button Content="保存设置"
+                        <Button x:Name="SaveButton"
+                                Content="保存设置"
                                 Click="SettingsSave_Click"
                                 Style="{StaticResource SettingsButtonStyle}"
                                 Margin="10,0,0,0"

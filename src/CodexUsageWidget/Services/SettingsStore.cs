@@ -99,7 +99,8 @@ public sealed class SettingsStore
             Left = double.IsFinite(settings.Left) ? settings.Left : double.NaN,
             Top = double.IsFinite(settings.Top) ? settings.Top : double.NaN,
             WeeklyRingColor = weeklyRingColor,
-            WeeklyRingGradientColor = weeklyRingGradientColor
+            WeeklyRingGradientColor = weeklyRingGradientColor,
+            Language = WidgetLanguage.Normalize(settings.Language)
         };
     }
 }
