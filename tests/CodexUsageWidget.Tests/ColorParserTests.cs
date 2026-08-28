@@ -27,4 +27,14 @@ public sealed class ColorParserTests
     {
         Assert.Equal("#58B7E8", ColorParser.ToHex(new WaterBallColor(88, 183, 232)));
     }
+
+    [Fact]
+    public void ConvertsSelectedDrawingColor()
+    {
+        var selectedColor = System.Drawing.Color.FromArgb(88, 183, 232);
+
+        Assert.Equal(
+            new WaterBallColor(88, 183, 232),
+            ColorParser.FromDrawingColor(selectedColor));
+    }
 }

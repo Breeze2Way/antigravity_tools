@@ -37,4 +37,9 @@ public static class ColorParser
     {
         return $"#{color.Red:X2}{color.Green:X2}{color.Blue:X2}";
     }
+
+    public static WaterBallColor FromDrawingColor(System.Drawing.Color color)
+    {
+        return new WaterBallColor(color.R, color.G, color.B);
+    }
 }

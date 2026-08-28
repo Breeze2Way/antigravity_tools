@@ -212,13 +212,23 @@
                         <Grid Grid.Row="1" Grid.Column="1" Margin="8,0,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="74" />
                                 <ColumnDefinition Width="30" />
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="WeeklyRingStartColorBox"
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
+                            <Button Grid.Column="1"
+                                    Content="选择颜色"
+                                    Click="PickStartColor_Click"
+                                    Margin="8,0,0,0"
+                                    Padding="4,3"
+                                    MinWidth="66"
+                                    MinHeight="30"
+                                    BorderBrush="#CBD5E1"
+                                    Background="#F8FAFC" />
                             <Border x:Name="WeeklyRingStartPreview"
-                                    Grid.Column="1"
+                                    Grid.Column="2"
                                     Width="22"
                                     Height="22"
                                     Margin="8,0,0,0"
@@ -235,13 +245,23 @@
                         <Grid Grid.Row="2" Grid.Column="1" Margin="8,0,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="74" />
                                 <ColumnDefinition Width="30" />
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="WeeklyRingEndColorBox"
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
+                            <Button Grid.Column="1"
+                                    Content="选择颜色"
+                                    Click="PickEndColor_Click"
+                                    Margin="8,0,0,0"
+                                    Padding="4,3"
+                                    MinWidth="66"
+                                    MinHeight="30"
+                                    BorderBrush="#CBD5E1"
+                                    Background="#F8FAFC" />
                             <Border x:Name="WeeklyRingEndPreview"
-                                    Grid.Column="1"
+                                    Grid.Column="2"
                                     Width="22"
                                     Height="22"
                                     Margin="8,0,0,0"

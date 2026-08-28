@@ -536,6 +536,39 @@ public partial class MainWindow : Window
         UpdateRingColorInputs();
     }
 
+    private void PickStartColor_Click(object sender, RoutedEventArgs e)
+    {
+        PickRingColor(WeeklyRingStartColorBox);
+    }
+
+    private void PickEndColor_Click(object sender, RoutedEventArgs e)
+    {
+        PickRingColor(WeeklyRingEndColorBox);
+    }
+
+    private void PickRingColor(System.Windows.Controls.TextBox textBox)
+    {
+        using var dialog = new Forms.ColorDialog
+        {
+            AllowFullOpen = true,
+            AnyColor = true,
+            FullOpen = true,
+            SolidColorOnly = true
+        };
+        if (ColorParser.TryParseHex(textBox.Text, out var currentColor))
+        {
+            dialog.Color = System.Drawing.Color.FromArgb(
+                currentColor.Red,
+                currentColor.Green,
+                currentColor.Blue);
+        }
+
+        if (dialog.ShowDialog() == Forms.DialogResult.OK)
+        {
+            textBox.Text = ColorParser.ToHex(ColorParser.FromDrawingColor(dialog.Color));
+        }
+    }
+
     private void UpdateRingColorInputs()
     {
         if (WeeklyRingEndColorBox is null)
