@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer refreshTimer;
     private readonly DispatcherTimer localRefreshTimer;
     private readonly DispatcherTimer resetCountdownTimer;
+    private readonly DispatcherTimer officialRetryTimer;
     private readonly UsageFileWatcher usageFileWatcher;
     private readonly UserActivityMonitor userActivityMonitor = new();
     private Forms.NotifyIcon trayIcon = null!;
@@ -82,6 +83,11 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(30)
         };
         resetCountdownTimer.Tick += ResetCountdownTimer_Tick;
+        officialRetryTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(5)
+        };
+        officialRetryTimer.Tick += OfficialRetryTimer_Tick;
         usageFileWatcher = new UsageFileWatcher(dataPaths);
         usageFileWatcher.Changed += UsageFileWatcher_Changed;
         ConfigureWindow();
@@ -93,7 +99,15 @@ public partial class MainWindow : Window
         PositionWindow();
         ConfigureRefreshTimer();
         resetCountdownTimer.Start();
-        RefreshAsync();
+        if (OfficialRefreshPolicy.ShouldReadAutomatically(userActivityMonitor.IsUserActive()))
+        {
+            RefreshAsync();
+        }
+        else
+        {
+            RefreshAsync(refreshOfficial: false);
+            officialRetryTimer.Start();
+        }
     }
 
     private void Window_Closed(object? sender, EventArgs e)
@@ -101,6 +115,7 @@ public partial class MainWindow : Window
         refreshTimer.Stop();
         localRefreshTimer.Stop();
         resetCountdownTimer.Stop();
+        officialRetryTimer.Stop();
         usageFileWatcher.Dispose();
         var savedPosition = dashboardPosition ?? new System.Windows.Point(Left, Top);
         settingsStore.Save(settings with { Left = savedPosition.X, Top = savedPosition.Y });
@@ -157,11 +172,23 @@ public partial class MainWindow : Window
 
     private void RefreshTimer_Tick(object? sender, EventArgs e)
     {
-        if (userActivityMonitor.IsUserActive())
+        if (!OfficialRefreshPolicy.ShouldReadAutomatically(userActivityMonitor.IsUserActive()))
+        {
+            officialRetryTimer.Start();
+            return;
+        }
+
+        RefreshAsync(refreshOfficial: true);
+    }
+
+    private void OfficialRetryTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!OfficialRefreshPolicy.ShouldReadAutomatically(userActivityMonitor.IsUserActive()))
         {
             return;
         }
 
+        officialRetryTimer.Stop();
         RefreshAsync(refreshOfficial: true);
     }
 

@@ -14,8 +14,8 @@ public sealed class OfficialUsageReader
     private const string ProcessName = "ChatGPT";
     private const string ProfileMenuName = "打开个人资料菜单";
     private const string RemainingUsageName = "剩余用量";
-    internal const int UiReadAttempts = 8;
-    internal static readonly TimeSpan UiPollInterval = TimeSpan.FromMilliseconds(150);
+    internal const int UiReadAttempts = 4;
+    internal static readonly TimeSpan UiPollInterval = TimeSpan.FromMilliseconds(250);
     private static readonly Regex StandalonePercentageRegex = new(
         @"^\s*(?<value>\d{1,3}(?:[.,]\d+)?)\s*%\s*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);

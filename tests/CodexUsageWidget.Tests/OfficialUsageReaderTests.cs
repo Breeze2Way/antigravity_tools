@@ -5,8 +5,8 @@ public sealed class OfficialUsageReaderTests
     [Fact]
     public void BoundsUiAutomationPollingToLimitCpuBursts()
     {
-        Assert.InRange(OfficialUsageReader.UiReadAttempts, 1, 8);
-        Assert.InRange(OfficialUsageReader.UiPollInterval, TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
+        Assert.Equal(4, OfficialUsageReader.UiReadAttempts);
+        Assert.Equal(TimeSpan.FromMilliseconds(250), OfficialUsageReader.UiPollInterval);
     }
 
     [Fact]
