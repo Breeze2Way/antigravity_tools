@@ -60,6 +60,27 @@ public sealed class UsageDisplayFormatterTests
     }
 
     [Fact]
+    public void FormatsTooltipDetailsInEnglish()
+    {
+        var details = UsageDisplayFormatter.FormatTooltipDetails(
+            "88%",
+            "66%",
+            todayTokens: 10_000_000,
+            yesterdayTokens: 200_000_000,
+            sevenDayTokens: 300_000_000,
+            thirtyDayTokens: 400_000_000,
+            refreshedAt: new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero),
+            english: true);
+
+        Assert.Contains("Five-hour remaining: 88%", details);
+        Assert.Contains("Weekly remaining: 66%", details);
+        Assert.Contains("Usage: 10M (yesterday 200M)", details);
+        Assert.Contains("Last 7 days total: 300.0M", details);
+        Assert.Contains("Updated:", details);
+        Assert.DoesNotContain("剩余", details);
+    }
+
+    [Fact]
     public void FormatsResetTimeWithRemainingHours()
     {
         var now = new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.Zero);
@@ -68,6 +89,16 @@ public sealed class UsageDisplayFormatterTests
         Assert.Equal(
             "重置时间：2026-08-12 14:30 [剩余 2h]",
             UsageDisplayFormatter.FormatResetDetails(resetAt, now));
+    }
+
+    [Fact]
+    public void FormatsResetTimeInEnglish()
+    {
+        var now = new DateTimeOffset(2026, 8, 12, 12, 0, 0, TimeSpan.Zero);
+
+        Assert.Equal(
+            "Reset time: 2026-08-12 14:30 [2h remaining]",
+            UsageDisplayFormatter.FormatResetDetails(now.AddHours(2.5), now, english: true));
     }
 
     [Fact]

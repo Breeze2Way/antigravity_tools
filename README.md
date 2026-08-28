@@ -36,6 +36,8 @@ A compact Windows floating widget that visualizes Codex five-hour and weekly rem
   左键拖动窗口，右键打开刷新、设置、官方用量和退出菜单。
 - The right-click menu supports hot switching between Chinese and English, including the settings panel and tray menu.
   右键菜单支持中英文热切换，设置面板和托盘菜单会同步更新。
+- Hover details and reset countdown text follow the selected language as well.
+  鼠标悬停详情和重置倒计时文字也会跟随当前语言切换。
 
 ## Performance / 性能
 

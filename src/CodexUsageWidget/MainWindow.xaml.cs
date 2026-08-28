@@ -237,7 +237,9 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            SetDetails($"刷新失败：{exception.Message}");
+            SetDetails(WidgetLanguage.IsEnglish(settings.Language)
+                ? $"Refresh failed: {exception.Message}"
+                : $"刷新失败：{exception.Message}");
         }
         finally
         {
@@ -269,7 +271,8 @@ public partial class MainWindow : Window
             state.YesterdayTokens,
             state.SevenDay.Usage.TotalTokens,
             state.ThirtyDay.Usage.TotalTokens,
-            state.RefreshedAt));
+            state.RefreshedAt,
+            english: WidgetLanguage.IsEnglish(settings.Language)));
     }
 
     private void SetDetails(string details)
@@ -280,7 +283,8 @@ public partial class MainWindow : Window
             UsageDisplayFormatter.FormatResetDetails(
                 lastState?.FiveHourResetAt,
                 lastState?.WeeklyResetAt ?? lastState?.ResetAt,
-                DateTimeOffset.Now));
+                DateTimeOffset.Now,
+                english: WidgetLanguage.IsEnglish(settings.Language)));
     }
 
     private void ResetCountdownTimer_Tick(object? sender, EventArgs e)
@@ -292,7 +296,8 @@ public partial class MainWindow : Window
                 UsageDisplayFormatter.FormatResetDetails(
                     lastState?.FiveHourResetAt,
                     lastState?.WeeklyResetAt ?? lastState?.ResetAt,
-                    DateTimeOffset.Now));
+                    DateTimeOffset.Now,
+                    english: WidgetLanguage.IsEnglish(settings.Language)));
         }
     }
 
@@ -639,6 +644,10 @@ public partial class MainWindow : Window
         });
         settingsStore.Save(settings);
         ApplyLanguage();
+        if (lastState is not null)
+        {
+            ApplySnapshot(lastState);
+        }
     }
 
     private void ApplyLanguage()
