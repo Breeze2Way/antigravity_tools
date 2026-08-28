@@ -10,4 +10,10 @@ public sealed record WidgetSettings(
     double Top = double.NaN)
 {
     public bool WeeklyBudgetConfigured { get; init; }
+
+    public string WeeklyRingColor { get; init; } = "#58B7E8";
+
+    public string WeeklyRingGradientColor { get; init; } = "#8BDCF5";
+
+    public bool WeeklyRingGradientEnabled { get; init; }
 }

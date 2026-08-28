@@ -30,6 +30,9 @@ public sealed class WaterBallControl : FrameworkElement
     private double? weeklyRemainingPercent;
     private string centerText = "--";
     private double tokensPerMinute;
+    private WaterBallColor weeklyRingStartColor = new(88, 183, 232);
+    private WaterBallColor weeklyRingEndColor = new(139, 220, 245);
+    private bool weeklyRingGradientEnabled;
     private double animationTime;
     private long lastRenderTimestamp;
     private readonly DispatcherTimer animationTimer;
@@ -155,6 +158,51 @@ public sealed class WaterBallControl : FrameworkElement
         }
     }
 
+    public WaterBallColor WeeklyRingStartColor
+    {
+        get => weeklyRingStartColor;
+        set
+        {
+            if (weeklyRingStartColor == value)
+            {
+                return;
+            }
+
+            weeklyRingStartColor = value;
+            InvalidateVisual();
+        }
+    }
+
+    public WaterBallColor WeeklyRingEndColor
+    {
+        get => weeklyRingEndColor;
+        set
+        {
+            if (weeklyRingEndColor == value)
+            {
+                return;
+            }
+
+            weeklyRingEndColor = value;
+            InvalidateVisual();
+        }
+    }
+
+    public bool WeeklyRingGradientEnabled
+    {
+        get => weeklyRingGradientEnabled;
+        set
+        {
+            if (weeklyRingGradientEnabled == value)
+            {
+                return;
+            }
+
+            weeklyRingGradientEnabled = value;
+            InvalidateVisual();
+        }
+    }
+
     protected override AutomationPeer OnCreateAutomationPeer()
     {
         return new WaterBallAutomationPeer(this);
@@ -212,7 +260,10 @@ public sealed class WaterBallControl : FrameworkElement
             radius - 1.5,
             weeklyRemainingPercent,
             thickness: WaterBallDisplay.WeeklyRingThickness,
-            opacity: WaterBallDisplay.WeeklyRingOpacity);
+            opacity: WaterBallDisplay.WeeklyRingOpacity,
+            weeklyRingStartColor,
+            weeklyRingEndColor,
+            weeklyRingGradientEnabled);
 
         DrawCenterText(drawingContext, center, radius);
     }
@@ -318,7 +369,10 @@ public sealed class WaterBallControl : FrameworkElement
         double radius,
         double? remainingPercent,
         double thickness,
-        double opacity)
+        double opacity,
+        WaterBallColor startColor,
+        WaterBallColor endColor,
+        bool gradientEnabled)
     {
         if (radius <= 0)
         {
@@ -340,8 +394,7 @@ public sealed class WaterBallControl : FrameworkElement
             return;
         }
 
-        var activeColor = WaterBallDisplay.GetWeeklyRingColor();
-        var activeBrush = new SolidColorBrush(ToMediaColor(activeColor, opacity));
+        var activeBrush = CreateWeeklyRingBrush(startColor, endColor, gradientEnabled, opacity);
         var activePen = new MediaPen(activeBrush, thickness)
         {
             StartLineCap = PenLineCap.Round,
@@ -357,6 +410,29 @@ public sealed class WaterBallControl : FrameworkElement
             null,
             activePen,
             CreateArcGeometry(center, radius, sweepAngle.Value));
+    }
+
+    private static MediaBrush CreateWeeklyRingBrush(
+        WaterBallColor startColor,
+        WaterBallColor endColor,
+        bool gradientEnabled,
+        double opacity)
+    {
+        if (!gradientEnabled)
+        {
+            return new SolidColorBrush(ToMediaColor(startColor, opacity));
+        }
+
+        var brush = new LinearGradientBrush
+        {
+            MappingMode = BrushMappingMode.RelativeToBoundingBox,
+            StartPoint = new WpfPoint(0, 0),
+            EndPoint = new WpfPoint(1, 1),
+            Opacity = Math.Clamp(opacity, 0, 1)
+        };
+        brush.GradientStops.Add(new GradientStop(ToMediaColor(startColor), 0));
+        brush.GradientStops.Add(new GradientStop(ToMediaColor(endColor), 1));
+        return brush;
     }
 
     private static StreamGeometry CreateArcGeometry(

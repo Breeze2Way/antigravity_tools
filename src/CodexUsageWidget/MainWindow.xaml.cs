@@ -24,8 +24,8 @@ public partial class MainWindow : Window
     private const double BallWindowSize = 68;
     private const double WaterBallSize = 62;
     private static readonly TimeSpan LocalRefreshDebounce = TimeSpan.FromMilliseconds(400);
-    private const double SettingsWindowWidth = 360;
-    private const double SettingsWindowHeight = 245;
+    private const double SettingsWindowWidth = 420;
+    private const double SettingsWindowHeight = 480;
     private const double SettingsWindowGap = 12;
     private const string OfficialUsageUrl = "https://chatgpt.com";
     private const string StartupValueName = "CodexUsageWidget";
@@ -67,6 +67,7 @@ public partial class MainWindow : Window
         WaterBallHost.ToolTip = hostDetailsText;
         WaterBallHost.Children.Add(waterBall);
         settings = settingsStore.Load();
+        ApplyWeeklyRingSettings();
         var dataPaths = CodexDataPaths.ForCurrentUser();
         refreshService = new UsageRefreshService(
             new CodexDataReader(),
@@ -453,6 +454,10 @@ public partial class MainWindow : Window
         OpacitySlider.Value = settings.Opacity * 100;
         TopmostBox.IsChecked = settings.Topmost;
         AutoStartBox.IsChecked = settings.AutoStart;
+        WeeklyRingModeBox.SelectedIndex = settings.WeeklyRingGradientEnabled ? 1 : 0;
+        WeeklyRingStartColorBox.Text = settings.WeeklyRingColor;
+        WeeklyRingEndColorBox.Text = settings.WeeklyRingGradientColor;
+        UpdateRingColorInputs();
         DashboardPanel.Visibility = Visibility.Collapsed;
         SettingsPanel.Visibility = Visibility.Visible;
     }
@@ -486,6 +491,17 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!ColorParser.TryParseHex(WeeklyRingStartColorBox.Text, out var startColor) ||
+            !ColorParser.TryParseHex(WeeklyRingEndColorBox.Text, out var endColor))
+        {
+            System.Windows.MessageBox.Show(
+                "外圈颜色必须是有效的十六进制颜色，例如 #58B7E8。",
+                "设置无效",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
         var newSettings = SettingsStore.Normalize(settings with
         {
             WeeklyBudgetTokens = budget,
@@ -493,17 +509,66 @@ public partial class MainWindow : Window
             RefreshSeconds = refreshSeconds,
             Opacity = OpacitySlider.Value / 100,
             Topmost = TopmostBox.IsChecked == true,
-            AutoStart = AutoStartBox.IsChecked == true
+            AutoStart = AutoStartBox.IsChecked == true,
+            WeeklyRingColor = ColorParser.ToHex(startColor),
+            WeeklyRingGradientColor = ColorParser.ToHex(endColor),
+            WeeklyRingGradientEnabled = WeeklyRingModeBox.SelectedIndex == 1
         });
 
         settingsStore.Save(newSettings);
         settings = newSettings;
+        ApplyWeeklyRingSettings();
         Topmost = settings.Topmost;
         Opacity = settings.Opacity;
         ConfigureRefreshTimer();
         SetAutoStart(settings.AutoStart);
         ShowDashboard();
         RefreshAsync();
+    }
+
+    private void WeeklyRingMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateRingColorInputs();
+    }
+
+    private void RingColor_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        UpdateRingColorInputs();
+    }
+
+    private void UpdateRingColorInputs()
+    {
+        if (WeeklyRingEndColorBox is null)
+        {
+            return;
+        }
+
+        WeeklyRingEndColorBox.IsEnabled = WeeklyRingModeBox.SelectedIndex == 1;
+        UpdateColorPreview(WeeklyRingStartColorBox, WeeklyRingStartPreview);
+        UpdateColorPreview(WeeklyRingEndColorBox, WeeklyRingEndPreview);
+    }
+
+    private static void UpdateColorPreview(System.Windows.Controls.TextBox textBox, Border preview)
+    {
+        preview.Background = ColorParser.TryParseHex(textBox.Text, out var color)
+            ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(color.Red, color.Green, color.Blue))
+            : System.Windows.Media.Brushes.Transparent;
+        preview.BorderBrush = ColorParser.TryParseHex(textBox.Text, out _)
+            ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(203, 213, 225))
+            : System.Windows.Media.Brushes.IndianRed;
+    }
+
+    private void ApplyWeeklyRingSettings()
+    {
+        var startColor = ColorParser.TryParseHex(settings.WeeklyRingColor, out var parsedStart)
+            ? parsedStart
+            : new WaterBallColor(88, 183, 232);
+        var endColor = ColorParser.TryParseHex(settings.WeeklyRingGradientColor, out var parsedEnd)
+            ? parsedEnd
+            : new WaterBallColor(139, 220, 245);
+        waterBall.WeeklyRingStartColor = startColor;
+        waterBall.WeeklyRingEndColor = endColor;
+        waterBall.WeeklyRingGradientEnabled = settings.WeeklyRingGradientEnabled;
     }
 
     private static void SetAutoStart(bool enabled)

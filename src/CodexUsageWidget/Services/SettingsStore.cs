@@ -79,6 +79,13 @@ public sealed class SettingsStore
             ? Math.Clamp(settings.Opacity, 0.45, 1.0)
             : defaults.Opacity;
 
+        var weeklyRingColor = ColorParser.TryParseHex(settings.WeeklyRingColor, out var startColor)
+            ? ColorParser.ToHex(startColor)
+            : ColorParser.DefaultWeeklyRingColorHex;
+        var weeklyRingGradientColor = ColorParser.TryParseHex(settings.WeeklyRingGradientColor, out var endColor)
+            ? ColorParser.ToHex(endColor)
+            : ColorParser.DefaultWeeklyRingGradientColorHex;
+
         return settings with
         {
             WeeklyBudgetTokens = settings.WeeklyBudgetConfigured && settings.WeeklyBudgetTokens > 0
@@ -90,7 +97,9 @@ public sealed class SettingsStore
                 : defaults.RefreshSeconds,
             Opacity = opacity,
             Left = double.IsFinite(settings.Left) ? settings.Left : double.NaN,
-            Top = double.IsFinite(settings.Top) ? settings.Top : double.NaN
+            Top = double.IsFinite(settings.Top) ? settings.Top : double.NaN,
+            WeeklyRingColor = weeklyRingColor,
+            WeeklyRingGradientColor = weeklyRingGradientColor
         };
     }
 }
