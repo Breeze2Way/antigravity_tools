@@ -531,6 +531,14 @@ public partial class MainWindow : Window
         UpdateRingColorInputs();
     }
 
+    private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (OpacityValueText is not null)
+        {
+            OpacityValueText.Text = SettingsDisplayFormatter.FormatOpacityPercent(e.NewValue);
+        }
+    }
+
     private void RingColor_TextChanged(object sender, TextChangedEventArgs e)
     {
         UpdateRingColorInputs();

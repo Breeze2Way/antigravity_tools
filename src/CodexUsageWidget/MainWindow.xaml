@@ -34,9 +34,17 @@
             <Setter Property="MinWidth" Value="74" />
             <Setter Property="MinHeight" Value="32" />
             <Setter Property="Padding" Value="14,5" />
+            <Setter Property="Foreground" Value="#1E293B" />
+            <Setter Property="FontSize" Value="12" />
             <Setter Property="BorderBrush" Value="#CBD5E1" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Background" Value="#FFFFFF" />
+        </Style>
+        <Style x:Key="SettingsColorButtonStyle" TargetType="Button" BasedOn="{StaticResource SettingsButtonStyle}">
+            <Setter Property="MinWidth" Value="66" />
+            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Background" Value="#F8FAFC" />
         </Style>
         <Style TargetType="ToolTip">
             <Setter Property="Background" Value="#E60B1728" />
@@ -166,16 +174,32 @@
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
                         <Grid Grid.Row="2" Grid.Column="1" Margin="8,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="54" />
+                            </Grid.ColumnDefinitions>
                             <Slider x:Name="OpacitySlider"
+                                    Grid.Column="0"
+                                    Margin="0,0,10,0"
                                     VerticalAlignment="Center"
                                     Minimum="45"
                                     Maximum="100"
                                     TickFrequency="5"
-                                    IsSnapToTickEnabled="True" />
-                            <TextBlock Text="45%          100%"
-                                       Margin="0,21,0,0"
-                                       Foreground="#94A3B8"
-                                       FontSize="10" />
+                                    IsSnapToTickEnabled="True"
+                                    ValueChanged="OpacitySlider_ValueChanged" />
+                            <Border Grid.Column="1"
+                                    Height="28"
+                                    Background="#F8FAFC"
+                                    BorderBrush="#E2E8F0"
+                                    BorderThickness="1"
+                                    CornerRadius="5">
+                                <TextBlock x:Name="OpacityValueText"
+                                           Text="92%"
+                                           Foreground="#0F766E"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
                         </Grid>
                     </Grid>
 
@@ -219,14 +243,10 @@
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
                             <Button Grid.Column="1"
-                                    Content="选择颜色"
+                                    Content="选择…"
                                     Click="PickStartColor_Click"
-                                    Margin="8,0,0,0"
-                                    Padding="4,3"
-                                    MinWidth="66"
-                                    MinHeight="30"
-                                    BorderBrush="#CBD5E1"
-                                    Background="#F8FAFC" />
+                                    Style="{StaticResource SettingsColorButtonStyle}"
+                                    Margin="8,0,0,0" />
                             <Border x:Name="WeeklyRingStartPreview"
                                     Grid.Column="2"
                                     Width="22"
@@ -252,14 +272,10 @@
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
                             <Button Grid.Column="1"
-                                    Content="选择颜色"
+                                    Content="选择…"
                                     Click="PickEndColor_Click"
-                                    Margin="8,0,0,0"
-                                    Padding="4,3"
-                                    MinWidth="66"
-                                    MinHeight="30"
-                                    BorderBrush="#CBD5E1"
-                                    Background="#F8FAFC" />
+                                    Style="{StaticResource SettingsColorButtonStyle}"
+                                    Margin="8,0,0,0" />
                             <Border x:Name="WeeklyRingEndPreview"
                                     Grid.Column="2"
                                     Width="22"
