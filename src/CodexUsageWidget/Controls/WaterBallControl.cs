@@ -30,9 +30,9 @@ public sealed class WaterBallControl : FrameworkElement
     private double? weeklyRemainingPercent;
     private string centerText = "--";
     private double tokensPerMinute;
-    private WaterBallColor weeklyRingStartColor = new(88, 183, 232);
-    private WaterBallColor weeklyRingEndColor = new(139, 220, 245);
-    private bool weeklyRingGradientEnabled;
+    private WaterBallColor weeklyRingStartColor = ColorParser.DefaultWeeklyRingStartColor;
+    private WaterBallColor weeklyRingEndColor = ColorParser.DefaultWeeklyRingEndColor;
+    private bool weeklyRingGradientEnabled = true;
     private double animationTime;
     private long lastRenderTimestamp;
     private readonly DispatcherTimer animationTimer;

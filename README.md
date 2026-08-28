@@ -14,8 +14,8 @@ A compact Windows floating widget that visualizes Codex five-hour and weekly rem
   缺失的额度窗口保持低亮度，不显示误导性数值。
 - Neon glass shell, adaptive glow, animated water waves, and a weekly progress ring.
   提供霓虹玻璃球壳、自适应光晕、动态水波和周额度进度环。
-- The weekly ring defaults to sky blue and can be customized as a solid color or a two-color gradient.
-  周用量外环默认使用天蓝色，也可以在设置中自定义为纯色或双色渐变。
+- The weekly ring defaults to the current light-green-to-deep-blue gradient and can be customized as a solid color or a two-color gradient.
+  周用量外环默认使用当前的浅绿色到深蓝色渐变，也可以在设置中自定义为纯色或双色渐变。
 - The settings panel uses grouped white cards, editable `#RRGGBB` values, color previews, and input validation.
   设置面板采用白底分组布局，支持编辑 `#RRGGBB` 色值、颜色预览和输入校验。
 - Ring animation speed and glow respond to recent Token consumption.

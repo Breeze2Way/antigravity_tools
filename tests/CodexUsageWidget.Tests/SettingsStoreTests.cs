@@ -15,9 +15,9 @@ public sealed class SettingsStoreTests
         Assert.False(settings.AutoStart);
         Assert.True(double.IsNaN(settings.Left));
         Assert.True(double.IsNaN(settings.Top));
-        Assert.Equal("#58B7E8", settings.WeeklyRingColor);
-        Assert.Equal("#8BDCF5", settings.WeeklyRingGradientColor);
-        Assert.False(settings.WeeklyRingGradientEnabled);
+        Assert.Equal("#A6FFA6", settings.WeeklyRingColor);
+        Assert.Equal("#004080", settings.WeeklyRingGradientColor);
+        Assert.True(settings.WeeklyRingGradientEnabled);
     }
 
     [Fact]
@@ -53,8 +53,8 @@ public sealed class SettingsStoreTests
         Assert.Equal(1.0, loaded.Opacity, precision: 6);
         Assert.True(double.IsNaN(loaded.Left));
         Assert.True(double.IsNaN(loaded.Top));
-        Assert.Equal("#58B7E8", loaded.WeeklyRingColor);
-        Assert.Equal("#8BDCF5", loaded.WeeklyRingGradientColor);
+        Assert.Equal("#A6FFA6", loaded.WeeklyRingColor);
+        Assert.Equal("#004080", loaded.WeeklyRingGradientColor);
     }
 
     [Fact]

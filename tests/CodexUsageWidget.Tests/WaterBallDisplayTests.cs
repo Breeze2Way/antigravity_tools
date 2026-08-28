@@ -66,9 +66,9 @@ public sealed class WaterBallDisplayTests
     }
 
     [Fact]
-    public void UsesFixedSkyBlueColorForWeeklyRing()
+    public void UsesCurrentGradientStartColorForWeeklyRing()
     {
-        Assert.Equal(new WaterBallColor(88, 183, 232), WaterBallDisplay.GetWeeklyRingColor());
+        Assert.Equal(new WaterBallColor(166, 255, 166), WaterBallDisplay.GetWeeklyRingColor());
     }
 
     [Theory]

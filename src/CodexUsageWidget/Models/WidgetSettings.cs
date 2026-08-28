@@ -11,11 +11,11 @@ public sealed record WidgetSettings(
 {
     public bool WeeklyBudgetConfigured { get; init; }
 
-    public string WeeklyRingColor { get; init; } = "#58B7E8";
+    public string WeeklyRingColor { get; init; } = "#A6FFA6";
 
-    public string WeeklyRingGradientColor { get; init; } = "#8BDCF5";
+    public string WeeklyRingGradientColor { get; init; } = "#004080";
 
-    public bool WeeklyRingGradientEnabled { get; init; }
+    public bool WeeklyRingGradientEnabled { get; init; } = true;
 
     public string Language { get; init; } = "zh-CN";
 }

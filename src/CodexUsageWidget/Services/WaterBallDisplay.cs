@@ -16,7 +16,6 @@ public static class WaterBallDisplay
     private static readonly WaterBallColor BlueColor = new(59, 130, 246);
     private static readonly WaterBallColor GreenColor = new(34, 197, 94);
     private static readonly WaterBallColor BucketBaseColor = new(18, 32, 49);
-    private static readonly WaterBallColor WeeklyRingSkyBlue = new(88, 183, 232);
 
     public static double? GetFillRatio(double? remainingPercent)
     {
@@ -84,7 +83,7 @@ public static class WaterBallDisplay
 
     public static WaterBallColor GetWeeklyRingColor()
     {
-        return WeeklyRingSkyBlue;
+        return ColorParser.DefaultWeeklyRingStartColor;
     }
 
     public static WaterBallColor GetBackgroundColor(double? remainingPercent)

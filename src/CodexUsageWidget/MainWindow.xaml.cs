@@ -615,10 +615,10 @@ public partial class MainWindow : Window
     {
         var startColor = ColorParser.TryParseHex(settings.WeeklyRingColor, out var parsedStart)
             ? parsedStart
-            : new WaterBallColor(88, 183, 232);
+            : ColorParser.DefaultWeeklyRingStartColor;
         var endColor = ColorParser.TryParseHex(settings.WeeklyRingGradientColor, out var parsedEnd)
             ? parsedEnd
-            : new WaterBallColor(139, 220, 245);
+            : ColorParser.DefaultWeeklyRingEndColor;
         waterBall.WeeklyRingStartColor = startColor;
         waterBall.WeeklyRingEndColor = endColor;
         waterBall.WeeklyRingGradientEnabled = settings.WeeklyRingGradientEnabled;
