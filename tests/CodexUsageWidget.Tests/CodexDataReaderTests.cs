@@ -6,6 +6,22 @@ namespace CodexUsageWidget.Tests;
 public sealed class CodexDataReaderTests
 {
     [Fact]
+    public void ReusesUnchangedRolloutFileOnSubsequentReads()
+    {
+        using var temp = new TemporaryDirectory();
+        var sessions = Directory.CreateDirectory(Path.Combine(temp.Path, "sessions")).FullName;
+        var rollout = Path.Combine(sessions, "rollout-cache.jsonl");
+        File.WriteAllText(rollout, UsageJson("2026-08-11T08:00:00Z", 13));
+        var paths = new CodexDataPaths("missing.db", sessions);
+        var reader = new CodexDataReader();
+
+        reader.Read(paths);
+        reader.Read(paths);
+
+        Assert.Equal(0, reader.FilesReadForLastCall);
+    }
+
+    [Fact]
     public void ReadsValidUsageAndSkipsMalformedLines()
     {
         using var temp = new TemporaryDirectory();
