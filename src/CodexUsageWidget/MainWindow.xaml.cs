@@ -39,6 +39,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer localRefreshTimer;
     private readonly DispatcherTimer resetCountdownTimer;
     private readonly UsageFileWatcher usageFileWatcher;
+    private readonly UserActivityMonitor userActivityMonitor = new();
     private Forms.NotifyIcon trayIcon = null!;
     private System.Drawing.Icon? applicationIcon;
     private WidgetSettings settings;
@@ -154,7 +155,15 @@ public partial class MainWindow : Window
         refreshTimer.Start();
     }
 
-    private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshAsync(refreshOfficial: true);
+    private void RefreshTimer_Tick(object? sender, EventArgs e)
+    {
+        if (userActivityMonitor.IsUserActive())
+        {
+            return;
+        }
+
+        RefreshAsync(refreshOfficial: true);
+    }
 
     private void UsageFileWatcher_Changed(object? sender, EventArgs e)
     {

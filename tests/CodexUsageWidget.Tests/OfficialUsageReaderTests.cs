@@ -3,6 +3,13 @@ namespace CodexUsageWidget.Tests;
 public sealed class OfficialUsageReaderTests
 {
     [Fact]
+    public void BoundsUiAutomationPollingToLimitCpuBursts()
+    {
+        Assert.InRange(OfficialUsageReader.UiReadAttempts, 1, 8);
+        Assert.InRange(OfficialUsageReader.UiPollInterval, TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
     public void RetriesUiReadUntilAValueIsAvailable()
     {
         var attempts = 0;
