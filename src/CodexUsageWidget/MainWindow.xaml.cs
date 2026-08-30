@@ -74,9 +74,7 @@ public partial class MainWindow : Window
         settings = settingsStore.Load();
         ApplyWeeklyRingSettings();
         var dataPaths = CodexDataPaths.ForCurrentUser();
-        refreshService = new UsageRefreshService(
-            new CodexDataReader(),
-            dataPaths);
+        refreshService = CreateRefreshService(dataPaths);
         refreshTimer = new DispatcherTimer();
         refreshTimer.Tick += RefreshTimer_Tick;
         localRefreshTimer = new DispatcherTimer
@@ -99,6 +97,16 @@ public partial class MainWindow : Window
         ConfigureWindow();
         ConfigureTrayIcon();
         ApplyLanguage();
+    }
+
+    internal static UsageRefreshService CreateRefreshService(
+        CodexDataPaths dataPaths,
+        Func<OfficialUsageSnapshot?>? readOfficialUsage = null)
+    {
+        return new UsageRefreshService(
+            new CodexDataReader(),
+            dataPaths,
+            readOfficialUsage ?? new OfficialUsageReader().ReadUsage);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
