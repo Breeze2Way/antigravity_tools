@@ -205,6 +205,30 @@ public sealed class UsageRefreshServiceTests
     }
 
     [Fact]
+    public void PrefersOfficialFiveHourValueWhenLocalSnapshotIsStale()
+    {
+        var localFiveHour = new LocalRateLimitSnapshot(
+            Now,
+            UsedPercent: 0,
+            Window: TimeSpan.FromHours(5),
+            ResetAt: Now.AddHours(5));
+        var service = new UsageRefreshService(
+            _ => new DataReadResult([], 0, null, LatestFiveHourRateLimit: localFiveHour),
+            new CodexDataPaths("state.db", "sessions"),
+            readOfficialUsage: () => new OfficialUsageSnapshot(
+                RemainingPercent: 86,
+                ResetAfter: TimeSpan.FromDays(5),
+                FiveHourRemainingPercent: 96,
+                FiveHourResetAfter: TimeSpan.FromHours(4)));
+
+        var state = service.Refresh(Now, new WidgetSettings());
+
+        Assert.Equal(96, state.FiveHourRemainingPercent);
+        Assert.Equal(Now.AddHours(4), state.FiveHourResetAt);
+        Assert.Equal(86, state.OfficialRemainingPercent);
+    }
+
+    [Fact]
     public void ExposesFiveHourAndWeeklyRemainingValuesAndResetTimes()
     {
         var fiveHourResetAt = Now.AddHours(3);

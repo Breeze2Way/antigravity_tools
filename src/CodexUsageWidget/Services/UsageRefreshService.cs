@@ -11,6 +11,8 @@ public sealed class UsageRefreshService
     private WidgetViewState? lastSuccessful;
     private double? lastFiveHourRemainingPercent;
     private DateTimeOffset? lastFiveHourResetAt;
+    private double? lastOfficialFiveHourRemainingPercent;
+    private DateTimeOffset? lastOfficialFiveHourResetAt;
     private double? lastOfficialRemainingPercent;
     private DateTimeOffset? lastResetAt;
 
@@ -58,6 +60,8 @@ public sealed class UsageRefreshService
         var weeklyRemainingPercent = lastOfficialRemainingPercent;
         var fiveHourResetAt = lastFiveHourResetAt;
         var weeklyResetAt = lastResetAt;
+        double? localFiveHourRemainingPercent = null;
+        DateTimeOffset? localFiveHourResetAt = null;
         double? localWeeklyRemainingPercent = null;
         DateTimeOffset? localWeeklyResetAt = null;
         var hasLocalRateLimit = false;
@@ -66,9 +70,9 @@ public sealed class UsageRefreshService
         if (result.LatestFiveHourRateLimit is { } localFiveHourRateLimit)
         {
             lastFiveHourRemainingPercent = localFiveHourRateLimit.RemainingPercent;
-            fiveHourRemainingPercent = localFiveHourRateLimit.RemainingPercent;
+            localFiveHourRemainingPercent = localFiveHourRateLimit.RemainingPercent;
             lastFiveHourResetAt = localFiveHourRateLimit.ResetAt;
-            fiveHourResetAt = localFiveHourRateLimit.ResetAt;
+            localFiveHourResetAt = localFiveHourRateLimit.ResetAt;
             hasLocalRateLimit = true;
         }
 
@@ -87,9 +91,9 @@ public sealed class UsageRefreshService
             if (legacyRateLimit.IsFiveHour)
             {
                 lastFiveHourRemainingPercent = legacyRateLimit.RemainingPercent;
-                fiveHourRemainingPercent = legacyRateLimit.RemainingPercent;
+                localFiveHourRemainingPercent = legacyRateLimit.RemainingPercent;
                 lastFiveHourResetAt = legacyRateLimit.ResetAt;
-                fiveHourResetAt = legacyRateLimit.ResetAt;
+                localFiveHourResetAt = legacyRateLimit.ResetAt;
             }
             else
             {
@@ -115,9 +119,19 @@ public sealed class UsageRefreshService
                         officialPercentRead = true;
                     }
 
+                    if (currentOfficialUsage.FiveHourRemainingPercent.HasValue)
+                    {
+                        lastOfficialFiveHourRemainingPercent = currentOfficialUsage.FiveHourRemainingPercent;
+                    }
+
                     if (currentOfficialUsage.ResetAfter.HasValue)
                     {
                         lastResetAt = now + currentOfficialUsage.ResetAfter.Value;
+                    }
+
+                    if (currentOfficialUsage.FiveHourResetAfter.HasValue)
+                    {
+                        lastOfficialFiveHourResetAt = now + currentOfficialUsage.FiveHourResetAfter.Value;
                     }
                 }
             }
@@ -126,6 +140,12 @@ public sealed class UsageRefreshService
                 // Keep the last successful official value when the UI is unavailable.
             }
         }
+        fiveHourRemainingPercent = lastOfficialFiveHourRemainingPercent ??
+            localFiveHourRemainingPercent ??
+            lastFiveHourRemainingPercent;
+        fiveHourResetAt = lastOfficialFiveHourResetAt ??
+            localFiveHourResetAt ??
+            lastFiveHourResetAt;
         weeklyRemainingPercent = lastOfficialRemainingPercent ?? localWeeklyRemainingPercent;
         weeklyResetAt = lastResetAt ?? localWeeklyResetAt;
         var recentTokensPerMinute = UsageRateCalculator.CalculateTokensPerMinute(
@@ -170,7 +190,9 @@ public sealed class UsageRefreshService
             var statusParts = new List<string>();
             if (fiveHourRemainingPercent.HasValue)
             {
-                statusParts.Add(hasLocalRateLimit
+                statusParts.Add(lastOfficialFiveHourRemainingPercent.HasValue
+                    ? $"官方五小时剩余 {fiveHourRemainingPercent.Value:0.#}%"
+                    : hasLocalRateLimit
                     ? $"本地五小时剩余 {fiveHourRemainingPercent.Value:0.#}%"
                     : $"五小时剩余 {fiveHourRemainingPercent.Value:0.#}%");
             }

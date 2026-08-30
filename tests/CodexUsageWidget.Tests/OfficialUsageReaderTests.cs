@@ -63,6 +63,18 @@ public sealed class OfficialUsageReaderTests
             ]);
 
         Assert.Equal(86, percentage);
+
+        var fiveHourPercentage = OfficialUsageReader.SelectFiveHourPercentage(
+            [
+                new OfficialUsageReader.PercentageCandidate(96, 646, 18),
+                new OfficialUsageReader.PercentageCandidate(86, 670, 18)
+            ],
+            [
+                new OfficialUsageReader.UsageLabelCandidate("5 小时", 646, 18),
+                new OfficialUsageReader.UsageLabelCandidate("1 周", 670, 18)
+            ]);
+
+        Assert.Equal(96, fiveHourPercentage);
     }
 
     [Theory]

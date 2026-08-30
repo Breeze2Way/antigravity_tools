@@ -25,6 +25,9 @@ public sealed class OfficialUsageReader
     private static readonly Regex WeeklyUsageLabelRegex = new(
         @"^\s*\d+(?:[.,]\d+)?\s*(?:周|weeks?)\s*$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    private static readonly Regex FiveHourUsageLabelRegex = new(
+        @"^\s*\d+(?:[.,]\d+)?\s*(?:小时|小時|时|時|hours?|hrs?|h)\s*$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly Regex ResetDurationPartRegex = new(
         @"(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>天|d|day|days|小时|小時|时|時|h|hr|hrs|hour|hours|分钟|分鐘|分|m|min|mins|minute|minutes)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -182,13 +185,13 @@ public sealed class OfficialUsageReader
 
             try
             {
-                double? percentage = null;
+                OfficialUsagePercentages? percentages = null;
                 WaitUntil(
-                    () => (percentage = FindPercentage(window)) is not null,
+                    () => (percentages = FindPercentages(window)) is not null,
                     UiReadAttempts,
                     () => Thread.Sleep(UiPollInterval));
 
-                if (!percentage.HasValue)
+                if (!percentages.HasValue)
                 {
                     AutomationElement? remainingUsage = null;
                     WaitUntil(
@@ -210,18 +213,21 @@ public sealed class OfficialUsageReader
                     {
                         ((InvokePattern)invokePattern).Invoke();
                         WaitUntil(
-                            () => (percentage = FindPercentage(window)) is not null,
+                            () => (percentages = FindPercentages(window)) is not null,
                             UiReadAttempts,
                             () => Thread.Sleep(UiPollInterval));
                     }
                 }
 
-                if (!percentage.HasValue)
+                if (!percentages.HasValue || !percentages.Value.Weekly.HasValue)
                 {
                     continue;
                 }
 
-                return new OfficialUsageSnapshot(percentage, FindResetAfter(window, DateTimeOffset.Now));
+                return new OfficialUsageSnapshot(
+                    percentages.Value.Weekly,
+                    FindResetAfter(window, DateTimeOffset.Now),
+                    percentages.Value.FiveHour);
             }
             finally
             {
@@ -385,7 +391,7 @@ public sealed class OfficialUsageReader
         return resetAfter > TimeSpan.Zero;
     }
 
-    private static double? FindPercentage(AutomationElement window)
+    private static OfficialUsagePercentages? FindPercentages(AutomationElement window)
     {
         var menu = FindUsageMenu(window);
         if (menu is null)
@@ -407,14 +413,22 @@ public sealed class OfficialUsageReader
                 {
                     percentages.Add(new PercentageCandidate(percentage, bounds.Y, bounds.Height));
                 }
-                else if (IsWeeklyUsageLabel(name))
+                else if (IsWeeklyUsageLabel(name) || IsFiveHourUsageLabel(name))
                 {
                     labels.Add(new UsageLabelCandidate(name, bounds.Y, bounds.Height));
                 }
             }
 
-            return SelectWeeklyPercentage(percentages, labels) ??
-                (percentages.Count > 0 ? percentages[0].Value : null);
+            var weekly = SelectWeeklyPercentage(percentages, labels);
+            var fiveHour = SelectFiveHourPercentage(percentages, labels);
+            if (!weekly.HasValue && percentages.Count > 0)
+            {
+                weekly = percentages[0].Value;
+            }
+
+            return weekly.HasValue || fiveHour.HasValue
+                ? new OfficialUsagePercentages(weekly, fiveHour)
+                : null;
         }
         catch (Exception exception) when (IsExpectedUiAutomationException(exception))
         {
@@ -427,14 +441,33 @@ public sealed class OfficialUsageReader
 
     internal readonly record struct UsageLabelCandidate(string Name, double Top, double Height);
 
+    private readonly record struct OfficialUsagePercentages(
+        double? Weekly,
+        double? FiveHour);
+
     internal static double? SelectWeeklyPercentage(
         IReadOnlyList<PercentageCandidate> percentages,
         IReadOnlyList<UsageLabelCandidate> labels)
     {
-        var weeklyLabels = labels
-            .Where(label => IsWeeklyUsageLabel(label.Name))
+        return SelectPercentageForLabels(percentages, labels, IsWeeklyUsageLabel);
+    }
+
+    internal static double? SelectFiveHourPercentage(
+        IReadOnlyList<PercentageCandidate> percentages,
+        IReadOnlyList<UsageLabelCandidate> labels)
+    {
+        return SelectPercentageForLabels(percentages, labels, IsFiveHourUsageLabel);
+    }
+
+    private static double? SelectPercentageForLabels(
+        IReadOnlyList<PercentageCandidate> percentages,
+        IReadOnlyList<UsageLabelCandidate> labels,
+        Func<string?, bool> labelSelector)
+    {
+        var matchingLabels = labels
+            .Where(label => labelSelector(label.Name))
             .ToArray();
-        if (weeklyLabels.Length == 0 || percentages.Count == 0)
+        if (matchingLabels.Length == 0 || percentages.Count == 0)
         {
             return null;
         }
@@ -443,7 +476,7 @@ public sealed class OfficialUsageReader
             .Select(percentage => new
             {
                 percentage.Value,
-                Distance = weeklyLabels.Min(label => Math.Abs(
+                Distance = matchingLabels.Min(label => Math.Abs(
                     (label.Top + label.Height / 2) -
                     (percentage.Top + percentage.Height / 2)))
             })
@@ -455,6 +488,11 @@ public sealed class OfficialUsageReader
     private static bool IsWeeklyUsageLabel(string? text)
     {
         return !string.IsNullOrWhiteSpace(text) && WeeklyUsageLabelRegex.IsMatch(text);
+    }
+
+    private static bool IsFiveHourUsageLabel(string? text)
+    {
+        return !string.IsNullOrWhiteSpace(text) && FiveHourUsageLabelRegex.IsMatch(text);
     }
 
     private static TimeSpan? FindResetAfter(AutomationElement window, DateTimeOffset now)
