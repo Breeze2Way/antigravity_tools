@@ -11,8 +11,8 @@ public sealed class OfficialRefreshPolicyTests
     }
 
     [Fact]
-    public void ManualRefreshUsesLocalDataOnly()
+    public void ManualRefreshReadsOfficialDataWhenExplicitlyRequested()
     {
-        Assert.False(OfficialRefreshPolicy.ShouldReadOnManualRefresh);
+        Assert.True(OfficialRefreshPolicy.ShouldReadOnManualRefresh);
     }
 }
