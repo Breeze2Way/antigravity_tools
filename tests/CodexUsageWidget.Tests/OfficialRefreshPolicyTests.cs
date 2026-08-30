@@ -9,4 +9,10 @@ public sealed class OfficialRefreshPolicyTests
     {
         Assert.Equal(expected, OfficialRefreshPolicy.ShouldReadAutomatically(userActive));
     }
+
+    [Fact]
+    public void ManualRefreshUsesLocalDataOnly()
+    {
+        Assert.False(OfficialRefreshPolicy.ShouldReadOnManualRefresh);
+    }
 }

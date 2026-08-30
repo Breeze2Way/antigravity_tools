@@ -114,15 +114,8 @@ public partial class MainWindow : Window
         PositionWindow();
         ConfigureRefreshTimer();
         resetCountdownTimer.Start();
-        if (OfficialRefreshPolicy.ShouldReadAutomatically(userActivityMonitor.IsUserActive()))
-        {
-            RefreshAsync();
-        }
-        else
-        {
-            RefreshAsync(refreshOfficial: false);
-            officialRetryTimer.Start();
-        }
+        RefreshAsync(refreshOfficial: false);
+        officialRetryTimer.Start();
     }
 
     private void Window_Closed(object? sender, EventArgs e)
@@ -222,7 +215,7 @@ public partial class MainWindow : Window
         RefreshAsync(refreshOfficial: false);
     }
 
-    private async void RefreshAsync(bool refreshOfficial = true)
+    private async void RefreshAsync(bool refreshOfficial = false)
     {
         if (isRefreshing)
         {
@@ -404,7 +397,10 @@ public partial class MainWindow : Window
             ShowImageMargin = false,
             Font = new System.Drawing.Font("Microsoft YaHei UI", 9F)
         };
-        trayRefreshMenuItem = AddTrayMenuItem(menu, "刷新", (_, _) => Dispatcher.Invoke(RefreshAsync));
+        trayRefreshMenuItem = AddTrayMenuItem(
+            menu,
+            "刷新",
+            (_, _) => Dispatcher.Invoke(() => RefreshAsync(OfficialRefreshPolicy.ShouldReadOnManualRefresh)));
         traySettingsMenuItem = AddTrayMenuItem(menu, "设置", (_, _) => Dispatcher.Invoke(ShowSettings));
         trayOfficialUsageMenuItem = AddTrayMenuItem(menu, "打开官方用量", (_, _) => Dispatcher.Invoke(OpenOfficialUsage));
         trayLanguageMenuItem = AddTrayMenuItem(menu, "English", (_, _) => Dispatcher.Invoke(ToggleLanguage));
@@ -441,7 +437,8 @@ public partial class MainWindow : Window
         return item;
     }
 
-    private void Refresh_Click(object sender, RoutedEventArgs e) => RefreshAsync();
+    private void Refresh_Click(object sender, RoutedEventArgs e)
+        => RefreshAsync(OfficialRefreshPolicy.ShouldReadOnManualRefresh);
 
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowSettings();
 
@@ -548,7 +545,7 @@ public partial class MainWindow : Window
         ConfigureRefreshTimer();
         SetAutoStart(settings.AutoStart);
         ShowDashboard();
-        RefreshAsync();
+        RefreshAsync(refreshOfficial: false);
     }
 
     private void WeeklyRingMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
