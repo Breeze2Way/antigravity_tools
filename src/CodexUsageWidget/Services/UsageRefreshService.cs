@@ -58,6 +58,8 @@ public sealed class UsageRefreshService
         var weeklyRemainingPercent = lastOfficialRemainingPercent;
         var fiveHourResetAt = lastFiveHourResetAt;
         var weeklyResetAt = lastResetAt;
+        double? localWeeklyRemainingPercent = null;
+        DateTimeOffset? localWeeklyResetAt = null;
         var hasLocalRateLimit = false;
         var hasLocalWeeklyRateLimit = false;
 
@@ -72,10 +74,8 @@ public sealed class UsageRefreshService
 
         if (result.LatestWeeklyRateLimit is { } localWeeklyRateLimit)
         {
-            lastOfficialRemainingPercent = localWeeklyRateLimit.RemainingPercent;
-            weeklyRemainingPercent = localWeeklyRateLimit.RemainingPercent;
-            lastResetAt = localWeeklyRateLimit.ResetAt;
-            weeklyResetAt = localWeeklyRateLimit.ResetAt;
+            localWeeklyRemainingPercent = localWeeklyRateLimit.RemainingPercent;
+            localWeeklyResetAt = localWeeklyRateLimit.ResetAt;
             hasLocalRateLimit = true;
             hasLocalWeeklyRateLimit = true;
         }
@@ -93,17 +93,16 @@ public sealed class UsageRefreshService
             }
             else
             {
-                lastOfficialRemainingPercent = legacyRateLimit.RemainingPercent;
-                weeklyRemainingPercent = legacyRateLimit.RemainingPercent;
-                lastResetAt = legacyRateLimit.ResetAt;
-                weeklyResetAt = legacyRateLimit.ResetAt;
+                localWeeklyRemainingPercent = legacyRateLimit.RemainingPercent;
+                localWeeklyResetAt = legacyRateLimit.ResetAt;
             }
 
             hasLocalRateLimit = true;
             hasLocalWeeklyRateLimit = !legacyRateLimit.IsFiveHour;
         }
 
-        if (refreshOfficial && !hasLocalWeeklyRateLimit)
+        var officialPercentRead = false;
+        if (refreshOfficial)
         {
             try
             {
@@ -113,13 +112,12 @@ public sealed class UsageRefreshService
                     if (currentOfficialUsage.RemainingPercent.HasValue)
                     {
                         lastOfficialRemainingPercent = currentOfficialUsage.RemainingPercent;
-                        weeklyRemainingPercent = currentOfficialUsage.RemainingPercent;
+                        officialPercentRead = true;
                     }
 
                     if (currentOfficialUsage.ResetAfter.HasValue)
                     {
                         lastResetAt = now + currentOfficialUsage.ResetAfter.Value;
-                        weeklyResetAt = lastResetAt;
                     }
                 }
             }
@@ -128,6 +126,8 @@ public sealed class UsageRefreshService
                 // Keep the last successful official value when the UI is unavailable.
             }
         }
+        weeklyRemainingPercent = lastOfficialRemainingPercent ?? localWeeklyRemainingPercent;
+        weeklyResetAt = lastResetAt ?? localWeeklyResetAt;
         var recentTokensPerMinute = UsageRateCalculator.CalculateTokensPerMinute(
             result.Records,
             now,
@@ -177,7 +177,7 @@ public sealed class UsageRefreshService
 
             if (weeklyRemainingPercent.HasValue)
             {
-                statusParts.Add(hasLocalWeeklyRateLimit
+                statusParts.Add(hasLocalWeeklyRateLimit && !officialPercentRead
                     ? $"本地周剩余 {weeklyRemainingPercent.Value:0.#}%"
                     : $"官方周剩余 {weeklyRemainingPercent.Value:0.#}%");
             }

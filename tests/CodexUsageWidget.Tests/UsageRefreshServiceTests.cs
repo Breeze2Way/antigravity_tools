@@ -155,7 +155,7 @@ public sealed class UsageRefreshServiceTests
     }
 
     [Fact]
-    public void UsesLocalRateLimitBeforeAnyUiProvider()
+    public void PrefersOfficialRemainingPercentWhenLocalWeeklyRateLimitAlsoExists()
     {
         var resetAt = Now.AddDays(2);
         var localRateLimit = new LocalRateLimitSnapshot(
@@ -175,9 +175,33 @@ public sealed class UsageRefreshServiceTests
 
         var state = service.Refresh(Now, new WidgetSettings());
 
-        Assert.Equal(87.5, state.OfficialRemainingPercent);
-        Assert.Equal(resetAt, state.ResetAt);
-        Assert.Equal(0, providerReads);
+        Assert.Equal(1, state.OfficialRemainingPercent);
+        Assert.Equal(Now.AddHours(1), state.ResetAt);
+        Assert.Equal(1, providerReads);
+    }
+
+    [Fact]
+    public void KeepsOfficialValueDuringLaterLocalOnlyRefresh()
+    {
+        var localWeekly = new LocalRateLimitSnapshot(
+            Now.AddMinutes(1),
+            UsedPercent: 40,
+            Window: TimeSpan.FromDays(7),
+            ResetAt: Now.AddDays(5));
+        var reads = 0;
+        var service = new UsageRefreshService(
+            _ => reads++ == 0
+                ? new DataReadResult([], 0, null)
+                : new DataReadResult([], 0, null, LatestWeeklyRateLimit: localWeekly),
+            new CodexDataPaths("state.db", "sessions"),
+            () => 54);
+
+        var first = service.Refresh(Now, new WidgetSettings());
+        var local = service.RefreshLocal(Now.AddMinutes(1), new WidgetSettings());
+
+        Assert.Equal(54, first.OfficialRemainingPercent);
+        Assert.Equal(54, local.OfficialRemainingPercent);
+        Assert.Equal(localWeekly.ResetAt, local.WeeklyResetAt);
     }
 
     [Fact]

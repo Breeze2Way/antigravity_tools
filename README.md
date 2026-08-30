@@ -30,8 +30,8 @@ A compact Windows floating widget that visualizes Codex five-hour and weekly rem
   五小时和周额度按窗口长度（`300` 和 `10080` 分钟）自动识别，不依赖它们出现在 `primary` 还是 `secondary`。
 - File watching and a low-frequency timer keep the local value current; the last valid value is cached if a read temporarily fails.
   文件监听和低频定时器会自动更新本地数值，读取暂时失败时继续显示上一次有效缓存。
-- Local file changes refresh the 7-day/30-day statistics, while the legacy official reader remains available only as an optional fallback.
-  本地文件变化会刷新 7 天/30 天统计，旧版官方读取器仅保留为可选备用方式。
+- Local file changes refresh local statistics and provide a fallback limit value; low-frequency official reads provide the preferred current percentage.
+  本地文件变化会刷新本地统计并提供额度回退值，低频官方读取优先提供当前百分比。
 - Left-drag moves the widget; right-click opens refresh, settings, official usage, and exit actions.
   左键拖动窗口，右键打开刷新、设置、官方用量和退出菜单。
 - The right-click menu supports hot switching between Chinese and English, including the settings panel and tray menu.
