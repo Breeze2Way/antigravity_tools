@@ -22,6 +22,9 @@ public sealed class OfficialUsageReader
     private static readonly Regex UsageMenuPercentageRegex = new(
         @"^\s*(?:使用情况|usage)\s*[:：]?\s*(?:剩余|remaining)\s*(?<value>\d{1,3}(?:[.,]\d+)?)\s*%\s*$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    private static readonly Regex WeeklyUsageLabelRegex = new(
+        @"^\s*\d+(?:[.,]\d+)?\s*(?:周|weeks?)\s*$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly Regex ResetDurationPartRegex = new(
         @"(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>天|d|day|days|小时|小時|时|時|h|hr|hrs|hour|hours|分钟|分鐘|分|m|min|mins|minute|minutes)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -393,19 +396,65 @@ public sealed class OfficialUsageReader
         try
         {
             var descendants = menu.FindAll(TreeScope.Descendants, Condition.TrueCondition);
+            var percentages = new List<PercentageCandidate>();
+            var labels = new List<UsageLabelCandidate>();
             for (var index = 0; index < descendants.Count; index++)
             {
-                if (TryParsePercentage(descendants[index].Current.Name, out var percentage))
+                var element = descendants[index];
+                var name = element.Current.Name;
+                var bounds = element.Current.BoundingRectangle;
+                if (TryParsePercentage(name, out var percentage))
                 {
-                    return percentage;
+                    percentages.Add(new PercentageCandidate(percentage, bounds.Y, bounds.Height));
+                }
+                else if (IsWeeklyUsageLabel(name))
+                {
+                    labels.Add(new UsageLabelCandidate(name, bounds.Y, bounds.Height));
                 }
             }
+
+            return SelectWeeklyPercentage(percentages, labels) ??
+                (percentages.Count > 0 ? percentages[0].Value : null);
         }
         catch (Exception exception) when (IsExpectedUiAutomationException(exception))
         {
         }
 
         return null;
+    }
+
+    internal readonly record struct PercentageCandidate(double Value, double Top, double Height);
+
+    internal readonly record struct UsageLabelCandidate(string Name, double Top, double Height);
+
+    internal static double? SelectWeeklyPercentage(
+        IReadOnlyList<PercentageCandidate> percentages,
+        IReadOnlyList<UsageLabelCandidate> labels)
+    {
+        var weeklyLabels = labels
+            .Where(label => IsWeeklyUsageLabel(label.Name))
+            .ToArray();
+        if (weeklyLabels.Length == 0 || percentages.Count == 0)
+        {
+            return null;
+        }
+
+        return percentages
+            .Select(percentage => new
+            {
+                percentage.Value,
+                Distance = weeklyLabels.Min(label => Math.Abs(
+                    (label.Top + label.Height / 2) -
+                    (percentage.Top + percentage.Height / 2)))
+            })
+            .OrderBy(candidate => candidate.Distance)
+            .First()
+            .Value;
+    }
+
+    private static bool IsWeeklyUsageLabel(string? text)
+    {
+        return !string.IsNullOrWhiteSpace(text) && WeeklyUsageLabelRegex.IsMatch(text);
     }
 
     private static TimeSpan? FindResetAfter(AutomationElement window, DateTimeOffset now)

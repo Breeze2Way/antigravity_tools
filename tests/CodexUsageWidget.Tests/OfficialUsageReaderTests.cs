@@ -49,6 +49,22 @@ public sealed class OfficialUsageReaderTests
         Assert.Equal(78, percentage, precision: 6);
     }
 
+    [Fact]
+    public void SelectsPercentageFromWeeklyUsageRow()
+    {
+        var percentage = OfficialUsageReader.SelectWeeklyPercentage(
+            [
+                new OfficialUsageReader.PercentageCandidate(96, 646, 18),
+                new OfficialUsageReader.PercentageCandidate(86, 670, 18)
+            ],
+            [
+                new OfficialUsageReader.UsageLabelCandidate("5 小时", 646, 18),
+                new OfficialUsageReader.UsageLabelCandidate("1 周", 670, 18)
+            ]);
+
+        Assert.Equal(86, percentage);
+    }
+
     [Theory]
     [InlineData("剩余 54%")]
     [InlineData("54")]
