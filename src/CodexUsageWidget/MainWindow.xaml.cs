@@ -54,6 +54,7 @@ public partial class MainWindow : Window
     private WidgetViewState? lastState;
     private string? lastDetails;
     private System.Windows.Point? dashboardPosition;
+    private DateTimeOffset? lastOfficialReadAt;
 
     public MainWindow()
     {
@@ -103,10 +104,11 @@ public partial class MainWindow : Window
         CodexDataPaths dataPaths,
         Func<OfficialUsageSnapshot?>? readOfficialUsage = null)
     {
+        var apiReader = new OfficialUsageApiReader();
         return new UsageRefreshService(
             new CodexDataReader(),
             dataPaths,
-            readOfficialUsage ?? new OfficialUsageReader().ReadUsage);
+            readOfficialUsage ?? apiReader.ReadUsage);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -180,19 +182,34 @@ public partial class MainWindow : Window
 
     private void RefreshTimer_Tick(object? sender, EventArgs e)
     {
-        if (!OfficialRefreshPolicy.ShouldReadAutomatically(userActivityMonitor.IsUserActive()))
+        if (userActivityMonitor.IsUserActive())
         {
             officialRetryTimer.Start();
             return;
         }
 
-        RefreshAsync(refreshOfficial: true);
+        if (OfficialRefreshPolicy.ShouldReadAutomatically(
+                userActivityMonitor.IsUserActive(),
+                DateTimeOffset.UtcNow,
+                lastOfficialReadAt))
+        {
+            RefreshAsync(refreshOfficial: true);
+        }
     }
 
     private void OfficialRetryTimer_Tick(object? sender, EventArgs e)
     {
-        if (!OfficialRefreshPolicy.ShouldReadAutomatically(userActivityMonitor.IsUserActive()))
+        if (userActivityMonitor.IsUserActive())
         {
+            return;
+        }
+
+        if (!OfficialRefreshPolicy.ShouldReadAutomatically(
+                userActive: false,
+                now: DateTimeOffset.UtcNow,
+                lastReadAt: lastOfficialReadAt))
+        {
+            officialRetryTimer.Stop();
             return;
         }
 
@@ -228,6 +245,11 @@ public partial class MainWindow : Window
         }
 
         isRefreshing = true;
+        if (refreshOfficial)
+        {
+            lastOfficialReadAt = DateTimeOffset.UtcNow;
+        }
+
         try
         {
             var snapshot = await Task.Run(() => refreshService.Refresh(

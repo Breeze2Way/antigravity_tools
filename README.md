@@ -28,10 +28,10 @@ A compact Windows floating widget that visualizes Codex five-hour and weekly rem
   剩余量较低时显示柔和红色警戒环，不会用闪烁窗口打断工作。
 - Five-hour and weekly limits are identified by their window length (`300` and `10080` minutes), not by whether they appear as `primary` or `secondary`.
   五小时和周额度按窗口长度（`300` 和 `10080` 分钟）自动识别，不依赖它们出现在 `primary` 还是 `secondary`。
-- File watching and a low-frequency timer keep the local value current; the last valid value is cached if a read temporarily fails.
-  文件监听和低频定时器会自动更新本地数值，读取暂时失败时继续显示上一次有效缓存。
-- Local file changes refresh local statistics and provide a fallback limit value; low-frequency official reads provide the preferred current percentage.
-  本地文件变化会刷新本地统计并提供额度回退值，低频官方读取优先提供当前百分比。
+- File watching refreshes local statistics without opening any window. Official limits are read silently through the local Codex session and are cached after a successful read.
+  文件监听会在不打开任何窗口的情况下刷新本地统计，官方额度通过本机 Codex 登录会话静默读取，成功后会缓存最后一次结果。
+- Automatic official reads wait for five seconds of user inactivity and have an independent ten-minute cooldown. Manual refresh remains explicit and immediate.
+  自动读取会等待用户连续五秒无操作，并设有独立的十分钟冷却；手动刷新仍按用户明确操作立即执行。
 - Left-drag moves the widget; right-click opens refresh, settings, official usage, and exit actions.
   左键拖动窗口，右键打开刷新、设置、官方用量和退出菜单。
 - The right-click menu supports hot switching between Chinese and English, including the settings panel and tray menu.
@@ -70,16 +70,17 @@ dotnet build src\CodexUsageWidget\CodexUsageWidget.csproj -c Release
 
 ## Data and Privacy / 数据与隐私
 
-The widget reads local Codex data in read-only mode:
+The widget reads local Codex data and the local Codex login session in read-only mode:
 
-程序以只读方式读取本机 Codex 数据：
+程序以只读方式读取本机 Codex 数据和 Codex 登录会话：
 
 - `%USERPROFILE%\.codex\state_5.sqlite`
 - `%USERPROFILE%\.codex\sessions\**\rollout-*.jsonl`
+- `%USERPROFILE%\.codex\auth.json` (only the current access token and account ID needed for the official usage request)
 
-It does not read, display, or upload `auth.json`, API keys, passwords, or other authentication data.
+Authentication data is never displayed, logged, or uploaded. The widget does not simulate mouse clicks or open the desktop app's usage menu.
 
-程序不会读取、显示或上传 `auth.json`、API key、密码或其他认证信息，也不会模拟鼠标点击桌面端用量页面。
+认证数据不会被显示、记录或上传，程序不会模拟鼠标点击，也不会打开桌面端用量菜单。
 
 ## Project Structure / 项目结构
 

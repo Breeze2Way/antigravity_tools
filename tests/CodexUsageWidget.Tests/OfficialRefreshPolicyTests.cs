@@ -15,4 +15,45 @@ public sealed class OfficialRefreshPolicyTests
     {
         Assert.True(OfficialRefreshPolicy.ShouldReadOnManualRefresh);
     }
+
+    [Fact]
+    public void AllowsTheFirstAutomaticReadAfterTheQuietWindow()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        Assert.True(OfficialRefreshPolicy.ShouldReadAutomatically(false, now, null));
+    }
+
+    [Fact]
+    public void BlocksAutomaticReadsDuringTheCooldown()
+    {
+        var lastReadAt = DateTimeOffset.UtcNow;
+
+        Assert.False(OfficialRefreshPolicy.ShouldReadAutomatically(
+            userActive: false,
+            now: lastReadAt.AddMinutes(9),
+            lastReadAt));
+    }
+
+    [Fact]
+    public void AllowsAutomaticReadsAfterTheCooldown()
+    {
+        var lastReadAt = DateTimeOffset.UtcNow;
+
+        Assert.True(OfficialRefreshPolicy.ShouldReadAutomatically(
+            userActive: false,
+            now: lastReadAt.AddMinutes(10),
+            lastReadAt));
+    }
+
+    [Fact]
+    public void NeverReadsAutomaticallyWhileTheUserIsActive()
+    {
+        var lastReadAt = DateTimeOffset.UtcNow.AddHours(-1);
+
+        Assert.False(OfficialRefreshPolicy.ShouldReadAutomatically(
+            userActive: true,
+            now: DateTimeOffset.UtcNow,
+            lastReadAt));
+    }
 }
