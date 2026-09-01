@@ -32,8 +32,8 @@ A compact Windows floating widget that visualizes Codex five-hour and weekly rem
   文件监听会在不打开任何窗口的情况下刷新本地统计，官方额度通过本机 Codex 登录会话静默读取，成功后会缓存最后一次结果。
 - Automatic official reads wait for five seconds of user inactivity and have an independent ten-minute cooldown. Manual refresh remains explicit and immediate.
   自动读取会等待用户连续五秒无操作，并设有独立的十分钟冷却；手动刷新仍按用户明确操作立即执行。
-- Left-drag moves the widget; right-click opens refresh, settings, official usage, and exit actions.
-  左键拖动窗口，右键打开刷新、设置、官方用量和退出菜单。
+- Click the ball to refresh official usage once; left-drag moves the widget, while right-click opens settings, official usage, and exit actions.
+  点击小球手动刷新一次官方用量；左键拖动窗口，右键打开设置、官方用量和退出菜单。
 - The right-click menu supports hot switching between Chinese and English, including the settings panel and tray menu.
   右键菜单支持中英文热切换，设置面板和托盘菜单会同步更新。
 - Hover details and reset countdown text follow the selected language as well.

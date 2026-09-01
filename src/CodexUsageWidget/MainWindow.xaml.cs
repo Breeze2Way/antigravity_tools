@@ -42,7 +42,6 @@ public partial class MainWindow : Window
     private readonly UsageFileWatcher usageFileWatcher;
     private readonly UserActivityMonitor userActivityMonitor = new();
     private Forms.NotifyIcon trayIcon = null!;
-    private Forms.ToolStripMenuItem trayRefreshMenuItem = null!;
     private Forms.ToolStripMenuItem traySettingsMenuItem = null!;
     private Forms.ToolStripMenuItem trayOfficialUsageMenuItem = null!;
     private Forms.ToolStripMenuItem trayLanguageMenuItem = null!;
@@ -366,6 +365,23 @@ public partial class MainWindow : Window
         }
     }
 
+    private void Ball_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left)
+        {
+            return;
+        }
+
+        var startPosition = new System.Windows.Point(Left, Top);
+        Header_MouseLeftButtonDown(sender, e);
+        if (BallInteractionPolicy.ShouldRefreshAfterDrag(
+                Left - startPosition.X,
+                Top - startPosition.Y))
+        {
+            RefreshAsync(OfficialRefreshPolicy.ShouldReadOnManualRefresh);
+        }
+    }
+
     private void SettingsHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         Header_MouseLeftButtonDown(sender, e);
@@ -419,10 +435,6 @@ public partial class MainWindow : Window
             ShowImageMargin = false,
             Font = new System.Drawing.Font("Microsoft YaHei UI", 9F)
         };
-        trayRefreshMenuItem = AddTrayMenuItem(
-            menu,
-            "刷新",
-            (_, _) => Dispatcher.Invoke(() => RefreshAsync(OfficialRefreshPolicy.ShouldReadOnManualRefresh)));
         traySettingsMenuItem = AddTrayMenuItem(menu, "设置", (_, _) => Dispatcher.Invoke(ShowSettings));
         trayOfficialUsageMenuItem = AddTrayMenuItem(menu, "打开官方用量", (_, _) => Dispatcher.Invoke(OpenOfficialUsage));
         trayLanguageMenuItem = AddTrayMenuItem(menu, "English", (_, _) => Dispatcher.Invoke(ToggleLanguage));
@@ -458,9 +470,6 @@ public partial class MainWindow : Window
         menu.Items.Add(item);
         return item;
     }
-
-    private void Refresh_Click(object sender, RoutedEventArgs e)
-        => RefreshAsync(OfficialRefreshPolicy.ShouldReadOnManualRefresh);
 
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowSettings();
 
@@ -682,7 +691,6 @@ public partial class MainWindow : Window
         var isEnglish = WidgetLanguage.IsEnglish(settings.Language);
         Title = isEnglish ? "Codex Usage" : "Codex 剩余用量";
 
-        RefreshMenuItem.Header = isEnglish ? "Refresh" : "刷新";
         SettingsMenuItem.Header = isEnglish ? "Settings" : "设置";
         OfficialUsageMenuItem.Header = isEnglish ? "Open official usage" : "打开官方用量";
         LanguageMenuItem.Header = isEnglish ? "切换到中文" : "Switch to English";
@@ -716,9 +724,8 @@ public partial class MainWindow : Window
             ? "Official usage query interval, from 10 to 600 seconds."
             : "官方用量查询间隔，范围 10–600 秒";
 
-        if (trayRefreshMenuItem is not null)
+        if (traySettingsMenuItem is not null)
         {
-            trayRefreshMenuItem.Text = isEnglish ? "Refresh" : "刷新";
             traySettingsMenuItem.Text = isEnglish ? "Settings" : "设置";
             trayOfficialUsageMenuItem.Text = isEnglish ? "Open official usage" : "打开官方用量";
             trayLanguageMenuItem.Text = isEnglish ? "切换到中文" : "Switch to English";

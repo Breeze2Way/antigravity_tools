@@ -80,7 +80,6 @@
                      Padding="4"
                      FontSize="13"
                      HasDropShadow="True">
-            <MenuItem x:Name="RefreshMenuItem" Header="刷新" Click="Refresh_Click" Padding="10,6" />
             <MenuItem x:Name="SettingsMenuItem" Header="设置" Click="Settings_Click" Padding="10,6" />
             <Separator />
             <MenuItem x:Name="OfficialUsageMenuItem" Header="打开官方用量" Click="OfficialUsage_Click" Padding="10,6" />
@@ -95,9 +94,9 @@
             Padding="0">
         <Grid>
             <Grid x:Name="DashboardPanel">
-                <Grid x:Name="WaterBallHost"
+            <Grid x:Name="WaterBallHost"
                       Background="Transparent"
-                      MouseLeftButtonDown="Header_MouseLeftButtonDown"
+                      MouseLeftButtonDown="Ball_MouseLeftButtonDown"
                       ToolTipService.InitialShowDelay="150"
                       ToolTipService.ShowDuration="60000"
                       ToolTipService.BetweenShowDelay="100" />
