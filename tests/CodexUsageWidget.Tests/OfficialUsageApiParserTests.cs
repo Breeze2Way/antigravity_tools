@@ -57,4 +57,24 @@ public sealed class OfficialUsageApiParserTests
         Assert.Equal(100, result!.FiveHourRemainingPercent);
         Assert.Equal(0, result.RemainingPercent);
     }
+
+    [Fact]
+    public void KeepsWeeklyRemainingWhenTheAggregateLimitIsBlocked()
+    {
+        const string json = """
+            {
+              "rate_limit": {
+                "allowed": false,
+                "primary_window": { "used_percent": 100 },
+                "secondary_window": { "used_percent": 30 }
+              }
+            }
+            """;
+
+        var result = OfficialUsageApiParser.Parse(json);
+
+        Assert.NotNull(result);
+        Assert.Equal(0, result!.FiveHourRemainingPercent);
+        Assert.Equal(70, result.RemainingPercent);
+    }
 }

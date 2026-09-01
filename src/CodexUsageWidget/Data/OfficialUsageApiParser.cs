@@ -22,9 +22,11 @@ public static class OfficialUsageApiParser
                 return null;
             }
 
-            var allowed = TryGetBoolean(rateLimit, "allowed");
-            var primary = ParseWindow(rateLimit, "primary_window", allowed);
-            var secondary = ParseWindow(rateLimit, "secondary_window", allowed);
+            // The aggregate `allowed` flag can be false when only one window is
+            // exhausted. Each window's used percentage is the authoritative
+            // value for its own remaining quota.
+            var primary = ParseWindow(rateLimit, "primary_window");
+            var secondary = ParseWindow(rateLimit, "secondary_window");
             if (primary is null && secondary is null)
             {
                 return null;
@@ -42,10 +44,7 @@ public static class OfficialUsageApiParser
         }
     }
 
-    private static UsageWindow? ParseWindow(
-        JsonElement parent,
-        string propertyName,
-        bool? allowed)
+    private static UsageWindow? ParseWindow(JsonElement parent, string propertyName)
     {
         if (!parent.TryGetProperty(propertyName, out var window) ||
             window.ValueKind != JsonValueKind.Object)
@@ -59,9 +58,7 @@ public static class OfficialUsageApiParser
             return null;
         }
 
-        var remainingPercent = allowed == false
-            ? 0
-            : Math.Clamp(100 - usedPercent.Value, 0, 100);
+        var remainingPercent = Math.Clamp(100 - usedPercent.Value, 0, 100);
         var resetAfter = TryGetDouble(window, "reset_after_seconds") is { } seconds
             ? TimeSpan.FromSeconds(Math.Max(0, seconds))
             : TryGetUnixResetAfter(window);
@@ -111,21 +108,6 @@ public static class OfficialUsageApiParser
         }
 
         return null;
-    }
-
-    private static bool? TryGetBoolean(JsonElement parent, string propertyName)
-    {
-        if (!parent.TryGetProperty(propertyName, out var value))
-        {
-            return null;
-        }
-
-        return value.ValueKind switch
-        {
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            _ => null
-        };
     }
 
     private sealed record UsageWindow(double RemainingPercent, TimeSpan? ResetAfter);
