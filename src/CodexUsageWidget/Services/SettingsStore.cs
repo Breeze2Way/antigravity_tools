@@ -85,6 +85,9 @@ public sealed class SettingsStore
         var weeklyRingGradientColor = ColorParser.TryParseHex(settings.WeeklyRingGradientColor, out var endColor)
             ? ColorParser.ToHex(endColor)
             : ColorParser.DefaultWeeklyRingGradientColorHex;
+        var weeklyRingTrackColor = ColorParser.TryParseHex(settings.WeeklyRingTrackColor, out var trackColor)
+            ? ColorParser.ToHex(trackColor)
+            : ColorParser.DefaultWeeklyRingTrackColorHex;
 
         return settings with
         {
@@ -100,6 +103,7 @@ public sealed class SettingsStore
             Top = double.IsFinite(settings.Top) ? settings.Top : double.NaN,
             WeeklyRingColor = weeklyRingColor,
             WeeklyRingGradientColor = weeklyRingGradientColor,
+            WeeklyRingTrackColor = weeklyRingTrackColor,
             Language = WidgetLanguage.Normalize(settings.Language)
         };
     }

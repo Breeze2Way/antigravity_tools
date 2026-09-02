@@ -506,6 +506,7 @@ public partial class MainWindow : Window
         WeeklyRingModeBox.SelectedIndex = settings.WeeklyRingGradientEnabled ? 1 : 0;
         WeeklyRingStartColorBox.Text = settings.WeeklyRingColor;
         WeeklyRingEndColorBox.Text = settings.WeeklyRingGradientColor;
+        WeeklyRingTrackColorBox.Text = settings.WeeklyRingTrackColor;
         UpdateRingColorInputs();
         DashboardPanel.Visibility = Visibility.Collapsed;
         SettingsPanel.Visibility = Visibility.Visible;
@@ -545,11 +546,12 @@ public partial class MainWindow : Window
         }
 
         if (!ColorParser.TryParseHex(WeeklyRingStartColorBox.Text, out var startColor) ||
-            !ColorParser.TryParseHex(WeeklyRingEndColorBox.Text, out var endColor))
+            !ColorParser.TryParseHex(WeeklyRingEndColorBox.Text, out var endColor) ||
+            !ColorParser.TryParseHex(WeeklyRingTrackColorBox.Text, out var trackColor))
         {
             ShowLocalizedMessage(
-                "外圈颜色必须是有效的十六进制颜色，例如 #58B7E8。",
-                "Ring colors must be valid hexadecimal colors, for example #58B7E8.",
+                "外圈颜色和底色必须是有效的十六进制颜色，例如 #58B7E8。",
+                "Ring colors and track color must be valid hexadecimal colors, for example #58B7E8.",
                 "设置无效",
                 "Invalid settings");
             return;
@@ -565,6 +567,7 @@ public partial class MainWindow : Window
             AutoStart = AutoStartBox.IsChecked == true,
             WeeklyRingColor = ColorParser.ToHex(startColor),
             WeeklyRingGradientColor = ColorParser.ToHex(endColor),
+            WeeklyRingTrackColor = ColorParser.ToHex(trackColor),
             WeeklyRingGradientEnabled = WeeklyRingModeBox.SelectedIndex == 1
         });
 
@@ -607,6 +610,11 @@ public partial class MainWindow : Window
         PickRingColor(WeeklyRingEndColorBox);
     }
 
+    private void PickTrackColor_Click(object sender, RoutedEventArgs e)
+    {
+        PickRingColor(WeeklyRingTrackColorBox);
+    }
+
     private void PickRingColor(System.Windows.Controls.TextBox textBox)
     {
         using var dialog = new Forms.ColorDialog
@@ -640,6 +648,7 @@ public partial class MainWindow : Window
         WeeklyRingEndColorBox.IsEnabled = WeeklyRingModeBox.SelectedIndex == 1;
         UpdateColorPreview(WeeklyRingStartColorBox, WeeklyRingStartPreview);
         UpdateColorPreview(WeeklyRingEndColorBox, WeeklyRingEndPreview);
+        UpdateColorPreview(WeeklyRingTrackColorBox, WeeklyRingTrackPreview);
     }
 
     private static void UpdateColorPreview(System.Windows.Controls.TextBox textBox, Border preview)
@@ -660,8 +669,12 @@ public partial class MainWindow : Window
         var endColor = ColorParser.TryParseHex(settings.WeeklyRingGradientColor, out var parsedEnd)
             ? parsedEnd
             : ColorParser.DefaultWeeklyRingEndColor;
+        var trackColor = ColorParser.TryParseHex(settings.WeeklyRingTrackColor, out var parsedTrack)
+            ? parsedTrack
+            : ColorParser.DefaultWeeklyRingTrackColor;
         waterBall.WeeklyRingStartColor = startColor;
         waterBall.WeeklyRingEndColor = endColor;
+        waterBall.WeeklyRingTrackColor = trackColor;
         waterBall.WeeklyRingGradientEnabled = settings.WeeklyRingGradientEnabled;
     }
 
@@ -710,6 +723,10 @@ public partial class MainWindow : Window
         GradientModeItem.Content = isEnglish ? "Gradient" : "渐变色";
         StartColorLabel.Text = isEnglish ? "Start color" : "起始颜色";
         EndColorLabel.Text = isEnglish ? "End color" : "结束颜色";
+        TrackColorLabel.Text = isEnglish ? "Track color" : "底色";
+        PickStartColorButton.Content = isEnglish ? "Choose…" : "选择…";
+        PickEndColorButton.Content = isEnglish ? "Choose…" : "选择…";
+        PickTrackColorButton.Content = isEnglish ? "Choose…" : "选择…";
         ColorHintText.Text = isEnglish
             ? "Use #RRGGBB, for example #58B7E8. Solid mode uses the start color."
             : "支持 #RRGGBB，例如 #58B7E8；纯色模式只使用起始颜色。";

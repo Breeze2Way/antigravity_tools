@@ -15,6 +15,8 @@ public sealed record WidgetSettings(
 
     public string WeeklyRingGradientColor { get; init; } = "#004080";
 
+    public string WeeklyRingTrackColor { get; init; } = "#0B2942";
+
     public bool WeeklyRingGradientEnabled { get; init; } = true;
 
     public string Language { get; init; } = "zh-CN";

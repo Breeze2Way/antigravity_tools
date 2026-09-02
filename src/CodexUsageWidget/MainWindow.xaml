@@ -117,7 +117,7 @@
                         <RowDefinition Height="124" />
                         <RowDefinition Height="18" />
                         <RowDefinition Height="26" />
-                        <RowDefinition Height="136" />
+                        <RowDefinition Height="168" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="40" />
                     </Grid.RowDefinitions>
@@ -221,6 +221,7 @@
                             <RowDefinition Height="34" />
                             <RowDefinition Height="42" />
                             <RowDefinition Height="42" />
+                            <RowDefinition Height="42" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="132" />
@@ -251,7 +252,8 @@
                             <TextBox x:Name="WeeklyRingStartColorBox"
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
-                            <Button Grid.Column="1"
+                            <Button x:Name="PickStartColorButton"
+                                    Grid.Column="1"
                                     Content="选择…"
                                     Click="PickStartColor_Click"
                                     Style="{StaticResource SettingsColorButtonStyle}"
@@ -281,12 +283,44 @@
                             <TextBox x:Name="WeeklyRingEndColorBox"
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
-                            <Button Grid.Column="1"
+                            <Button x:Name="PickEndColorButton"
+                                    Grid.Column="1"
                                     Content="选择…"
                                     Click="PickEndColor_Click"
                                     Style="{StaticResource SettingsColorButtonStyle}"
                                     Margin="8,0,0,0" />
                             <Border x:Name="WeeklyRingEndPreview"
+                                    Grid.Column="2"
+                                    Width="22"
+                                    Height="22"
+                                    Margin="8,0,0,0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    BorderBrush="#CBD5E1"
+                                    BorderThickness="1"
+                                    CornerRadius="4" />
+                        </Grid>
+                        <TextBlock x:Name="TrackColorLabel"
+                                   Grid.Row="3"
+                                   Text="底色"
+                                   Foreground="#334155"
+                                   VerticalAlignment="Center" />
+                        <Grid Grid.Row="3" Grid.Column="1" Margin="8,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="74" />
+                                <ColumnDefinition Width="30" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="WeeklyRingTrackColorBox"
+                                     Style="{StaticResource SettingsTextBoxStyle}"
+                                     TextChanged="RingColor_TextChanged" />
+                            <Button x:Name="PickTrackColorButton"
+                                    Grid.Column="1"
+                                    Content="选择…"
+                                    Click="PickTrackColor_Click"
+                                    Style="{StaticResource SettingsColorButtonStyle}"
+                                    Margin="8,0,0,0" />
+                            <Border x:Name="WeeklyRingTrackPreview"
                                     Grid.Column="2"
                                     Width="22"
                                     Height="22"

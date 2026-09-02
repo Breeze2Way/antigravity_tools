@@ -6,8 +6,10 @@ public static class ColorParser
 {
     public const string DefaultWeeklyRingColorHex = "#A6FFA6";
     public const string DefaultWeeklyRingGradientColorHex = "#004080";
+    public const string DefaultWeeklyRingTrackColorHex = "#0B2942";
     public static readonly WaterBallColor DefaultWeeklyRingStartColor = new(166, 255, 166);
     public static readonly WaterBallColor DefaultWeeklyRingEndColor = new(0, 64, 128);
+    public static readonly WaterBallColor DefaultWeeklyRingTrackColor = new(11, 41, 66);
 
     public static bool TryParseHex(string? text, out WaterBallColor color)
     {

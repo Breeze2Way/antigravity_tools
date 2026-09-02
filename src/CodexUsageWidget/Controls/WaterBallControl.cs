@@ -32,6 +32,7 @@ public sealed class WaterBallControl : FrameworkElement
     private double tokensPerMinute;
     private WaterBallColor weeklyRingStartColor = ColorParser.DefaultWeeklyRingStartColor;
     private WaterBallColor weeklyRingEndColor = ColorParser.DefaultWeeklyRingEndColor;
+    private WaterBallColor weeklyRingTrackColor = ColorParser.DefaultWeeklyRingTrackColor;
     private bool weeklyRingGradientEnabled = true;
     private double animationTime;
     private long lastRenderTimestamp;
@@ -203,6 +204,21 @@ public sealed class WaterBallControl : FrameworkElement
         }
     }
 
+    public WaterBallColor WeeklyRingTrackColor
+    {
+        get => weeklyRingTrackColor;
+        set
+        {
+            if (weeklyRingTrackColor == value)
+            {
+                return;
+            }
+
+            weeklyRingTrackColor = value;
+            InvalidateVisual();
+        }
+    }
+
     protected override AutomationPeer OnCreateAutomationPeer()
     {
         return new WaterBallAutomationPeer(this);
@@ -263,6 +279,7 @@ public sealed class WaterBallControl : FrameworkElement
             opacity: WaterBallDisplay.WeeklyRingOpacity,
             weeklyRingStartColor,
             weeklyRingEndColor,
+            weeklyRingTrackColor,
             weeklyRingGradientEnabled);
 
         DrawCenterText(drawingContext, center, radius);
@@ -372,6 +389,7 @@ public sealed class WaterBallControl : FrameworkElement
         double opacity,
         WaterBallColor startColor,
         WaterBallColor endColor,
+        WaterBallColor trackColor,
         bool gradientEnabled)
     {
         if (radius <= 0)
@@ -380,7 +398,11 @@ public sealed class WaterBallControl : FrameworkElement
         }
 
         var trackBrush = new SolidColorBrush(
-            MediaColor.FromArgb(WaterBallDisplay.WeeklyRingTrackAlpha, 172, 190, 208));
+            MediaColor.FromArgb(
+                WaterBallDisplay.WeeklyRingTrackAlpha,
+                trackColor.Red,
+                trackColor.Green,
+                trackColor.Blue));
         drawingContext.DrawEllipse(
             null,
             new MediaPen(trackBrush, thickness),

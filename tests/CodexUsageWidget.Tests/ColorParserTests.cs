@@ -37,4 +37,11 @@ public sealed class ColorParserTests
             new WaterBallColor(88, 183, 232),
             ColorParser.FromDrawingColor(selectedColor));
     }
+
+    [Fact]
+    public void ProvidesDarkBlueWeeklyRingTrackDefault()
+    {
+        Assert.Equal("#0B2942", ColorParser.DefaultWeeklyRingTrackColorHex);
+        Assert.Equal(new WaterBallColor(11, 41, 66), ColorParser.DefaultWeeklyRingTrackColor);
+    }
 }
