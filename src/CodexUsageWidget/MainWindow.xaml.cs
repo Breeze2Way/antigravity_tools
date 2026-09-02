@@ -24,8 +24,8 @@ public partial class MainWindow : Window
     private const double BallWindowSize = 68;
     private const double WaterBallSize = 62;
     private static readonly TimeSpan LocalRefreshDebounce = TimeSpan.FromMilliseconds(400);
-    private const double SettingsWindowWidth = 420;
-    private const double SettingsWindowHeight = 480;
+    internal const double SettingsWindowWidth = 500;
+    internal const double SettingsWindowHeight = 560;
     private const double SettingsWindowGap = 12;
     private const string OfficialUsageUrl = "https://chatgpt.com";
     private const string StartupValueName = "CodexUsageWidget";
@@ -600,19 +600,22 @@ public partial class MainWindow : Window
         UpdateRingColorInputs();
     }
 
-    private void PickStartColor_Click(object sender, RoutedEventArgs e)
+    private void PickStartColorPreview_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         PickRingColor(WeeklyRingStartColorBox);
+        e.Handled = true;
     }
 
-    private void PickEndColor_Click(object sender, RoutedEventArgs e)
+    private void PickEndColorPreview_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         PickRingColor(WeeklyRingEndColorBox);
+        e.Handled = true;
     }
 
-    private void PickTrackColor_Click(object sender, RoutedEventArgs e)
+    private void PickTrackColorPreview_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         PickRingColor(WeeklyRingTrackColorBox);
+        e.Handled = true;
     }
 
     private void PickRingColor(System.Windows.Controls.TextBox textBox)
@@ -724,12 +727,13 @@ public partial class MainWindow : Window
         StartColorLabel.Text = isEnglish ? "Start color" : "起始颜色";
         EndColorLabel.Text = isEnglish ? "End color" : "结束颜色";
         TrackColorLabel.Text = isEnglish ? "Track color" : "底色";
-        PickStartColorButton.Content = isEnglish ? "Choose…" : "选择…";
-        PickEndColorButton.Content = isEnglish ? "Choose…" : "选择…";
-        PickTrackColorButton.Content = isEnglish ? "Choose…" : "选择…";
         ColorHintText.Text = isEnglish
-            ? "Use #RRGGBB, for example #58B7E8. Solid mode uses the start color."
-            : "支持 #RRGGBB，例如 #58B7E8；纯色模式只使用起始颜色。";
+            ? "Use #RRGGBB or click a color swatch. Solid mode uses the start color."
+            : "支持 #RRGGBB，也可以点击色块选择颜色；纯色模式只使用起始颜色。";
+        var colorPickerTip = isEnglish ? "Click to choose a color" : "点击色块选择颜色";
+        WeeklyRingStartPreview.ToolTip = colorPickerTip;
+        WeeklyRingEndPreview.ToolTip = colorPickerTip;
+        WeeklyRingTrackPreview.ToolTip = colorPickerTip;
         TopmostBox.Content = isEnglish ? "Always on top" : "窗口置顶";
         AutoStartBox.Content = isEnglish ? "Start with Windows" : "开机启动";
         CancelButton.Content = isEnglish ? "Cancel" : "取消";

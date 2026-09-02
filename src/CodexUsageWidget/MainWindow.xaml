@@ -40,12 +40,6 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Background" Value="#FFFFFF" />
         </Style>
-        <Style x:Key="SettingsColorButtonStyle" TargetType="Button" BasedOn="{StaticResource SettingsButtonStyle}">
-            <Setter Property="MinWidth" Value="66" />
-            <Setter Property="Padding" Value="4,3" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Background" Value="#F8FAFC" />
-        </Style>
         <Style TargetType="ToolTip">
             <Setter Property="Background" Value="#E60B1728" />
             <Setter Property="Foreground" Value="#F5FAFF" />
@@ -246,28 +240,24 @@
                         <Grid Grid.Row="1" Grid.Column="1" Margin="8,0,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="74" />
-                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="34" />
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="WeeklyRingStartColorBox"
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
-                            <Button x:Name="PickStartColorButton"
-                                    Grid.Column="1"
-                                    Content="选择…"
-                                    Click="PickStartColor_Click"
-                                    Style="{StaticResource SettingsColorButtonStyle}"
-                                    Margin="8,0,0,0" />
                             <Border x:Name="WeeklyRingStartPreview"
-                                    Grid.Column="2"
-                                    Width="22"
-                                    Height="22"
-                                    Margin="8,0,0,0"
-                                    HorizontalAlignment="Left"
+                                    Grid.Column="1"
+                                    Width="28"
+                                    Height="28"
+                                    Margin="6,0,0,0"
+                                    HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
                                     BorderBrush="#CBD5E1"
                                     BorderThickness="1"
-                                    CornerRadius="4" />
+                                    CornerRadius="5"
+                                    Cursor="Hand"
+                                    ToolTip="点击色块选择颜色"
+                                    MouseLeftButtonDown="PickStartColorPreview_MouseLeftButtonDown" />
                         </Grid>
                         <TextBlock x:Name="EndColorLabel"
                                    Grid.Row="2"
@@ -277,28 +267,24 @@
                         <Grid Grid.Row="2" Grid.Column="1" Margin="8,0,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="74" />
-                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="34" />
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="WeeklyRingEndColorBox"
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
-                            <Button x:Name="PickEndColorButton"
-                                    Grid.Column="1"
-                                    Content="选择…"
-                                    Click="PickEndColor_Click"
-                                    Style="{StaticResource SettingsColorButtonStyle}"
-                                    Margin="8,0,0,0" />
                             <Border x:Name="WeeklyRingEndPreview"
-                                    Grid.Column="2"
-                                    Width="22"
-                                    Height="22"
-                                    Margin="8,0,0,0"
-                                    HorizontalAlignment="Left"
+                                    Grid.Column="1"
+                                    Width="28"
+                                    Height="28"
+                                    Margin="6,0,0,0"
+                                    HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
                                     BorderBrush="#CBD5E1"
                                     BorderThickness="1"
-                                    CornerRadius="4" />
+                                    CornerRadius="5"
+                                    Cursor="Hand"
+                                    ToolTip="点击色块选择颜色"
+                                    MouseLeftButtonDown="PickEndColorPreview_MouseLeftButtonDown" />
                         </Grid>
                         <TextBlock x:Name="TrackColorLabel"
                                    Grid.Row="3"
@@ -308,28 +294,24 @@
                         <Grid Grid.Row="3" Grid.Column="1" Margin="8,0,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="74" />
-                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="34" />
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="WeeklyRingTrackColorBox"
                                      Style="{StaticResource SettingsTextBoxStyle}"
                                      TextChanged="RingColor_TextChanged" />
-                            <Button x:Name="PickTrackColorButton"
-                                    Grid.Column="1"
-                                    Content="选择…"
-                                    Click="PickTrackColor_Click"
-                                    Style="{StaticResource SettingsColorButtonStyle}"
-                                    Margin="8,0,0,0" />
                             <Border x:Name="WeeklyRingTrackPreview"
-                                    Grid.Column="2"
-                                    Width="22"
-                                    Height="22"
-                                    Margin="8,0,0,0"
-                                    HorizontalAlignment="Left"
+                                    Grid.Column="1"
+                                    Width="28"
+                                    Height="28"
+                                    Margin="6,0,0,0"
+                                    HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
                                     BorderBrush="#CBD5E1"
                                     BorderThickness="1"
-                                    CornerRadius="4" />
+                                    CornerRadius="5"
+                                    Cursor="Hand"
+                                    ToolTip="点击色块选择颜色"
+                                    MouseLeftButtonDown="PickTrackColorPreview_MouseLeftButtonDown" />
                         </Grid>
                     </Grid>
 

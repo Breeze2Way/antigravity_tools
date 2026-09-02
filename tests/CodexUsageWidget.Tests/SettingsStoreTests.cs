@@ -46,7 +46,10 @@ public sealed class SettingsStoreTests
         using var temp = new TemporaryDirectory();
         var store = new SettingsStore(temp.Path);
 
-        store.Save(new WidgetSettings(0, 5, 2, true, false, double.PositiveInfinity, double.NaN));
+        store.Save(new WidgetSettings(0, 5, 2, true, false, double.PositiveInfinity, double.NaN)
+        {
+            WeeklyRingTrackColor = "not-a-color"
+        });
 
         var loaded = store.Load();
         Assert.Equal(0, loaded.WeeklyBudgetTokens);
