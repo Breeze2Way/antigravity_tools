@@ -88,10 +88,14 @@ public partial class MainWindow : Window
     }
 
     internal static AntigravityUsageRefreshService CreateRefreshService(
-        Func<AntigravityQuotaSnapshot?>? readOfficialUsage = null)
+        Func<AntigravityQuotaSnapshot?>? readOfficialUsage = null,
+        Func<DateTimeOffset, AntigravityTokenUsageSummary>? readTokenUsage = null)
     {
         var reader = new AntigravityStatusReader();
-        return new AntigravityUsageRefreshService(readOfficialUsage ?? reader.ReadUsage);
+        var tokenReader = new AntigravityTokenUsageReader();
+        return new AntigravityUsageRefreshService(
+            readOfficialUsage ?? reader.ReadUsage,
+            readTokenUsage ?? tokenReader.Read);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -254,7 +258,8 @@ public partial class MainWindow : Window
             ? AntigravityUsageDisplayFormatter.FormatTooltipDetails(
                 quota,
                 state.RefreshedAt,
-                english: WidgetLanguage.IsEnglish(settings.Language))
+                english: WidgetLanguage.IsEnglish(settings.Language),
+                tokenUsage: new AntigravityTokenUsageSummary(state.TodayTokens, state.YesterdayTokens))
             : state.Status);
     }
 

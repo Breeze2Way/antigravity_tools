@@ -5,10 +5,24 @@ namespace AntigravityUsageWidget.Services;
 
 public static class AntigravityUsageDisplayFormatter
 {
+    public static string FormatTokenUsage(
+        AntigravityTokenUsageSummary summary,
+        bool english)
+    {
+        var todayLabel = english ? "Today tokens" : "今日 token";
+        var yesterdayLabel = english ? "Yesterday tokens" : "昨日 token";
+        var separator = english ? ": " : "：";
+        return string.Join(
+            Environment.NewLine,
+            $"{todayLabel}{separator}{FormatTokensInMillions(summary.TodayTokens)}",
+            $"{yesterdayLabel}{separator}{FormatTokensInMillions(summary.YesterdayTokens)}");
+    }
+
     public static string FormatTooltipDetails(
         AntigravityDisplayQuota quota,
         DateTimeOffset refreshedAt,
-        bool english)
+        bool english,
+        AntigravityTokenUsageSummary? tokenUsage = null)
     {
         var lines = new List<string>();
         var groups = quota.Rows
@@ -28,6 +42,11 @@ public static class AntigravityUsageDisplayFormatter
                 lines.Add(FormatGroupQuota(group, AntigravityQuotaPeriod.Weekly, english));
                 lines.Add(FormatGroupQuota(group, AntigravityQuotaPeriod.Short, english));
             }
+        }
+
+        if (tokenUsage is not null)
+        {
+            lines.Add(FormatTokenUsage(tokenUsage, english));
         }
 
         lines.Add($"{(english ? "Updated" : "更新时间")}: {refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
@@ -90,6 +109,11 @@ public static class AntigravityUsageDisplayFormatter
     private static string FormatPercent(double value)
     {
         return $"{value.ToString("0.#", CultureInfo.InvariantCulture)}%";
+    }
+
+    private static string FormatTokensInMillions(long tokens)
+    {
+        return $"{(tokens / 1_000_000d).ToString("0.0", CultureInfo.InvariantCulture)}M";
     }
 
     public static string? FormatResetDetails(

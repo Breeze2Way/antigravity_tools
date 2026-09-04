@@ -19,6 +19,19 @@ public sealed class AntigravityUsageRefreshServiceTests
     }
 
     [Fact]
+    public void AddsTodayAndYesterdayTokenTotalsToWidgetState()
+    {
+        var service = new AntigravityUsageRefreshService(
+            () => Snapshot(),
+            _ => new AntigravityTokenUsageSummary(3_450_039, 500_000));
+
+        var state = service.Refresh(Now);
+
+        Assert.Equal(3_450_039, state.TodayTokens);
+        Assert.Equal(500_000, state.YesterdayTokens);
+    }
+
+    [Fact]
     public void RetainsLastSuccessfulQuotaWhenTheServerBecomesUnavailable()
     {
         var reads = 0;

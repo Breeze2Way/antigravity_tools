@@ -188,4 +188,27 @@ public sealed class AntigravityUsageDisplayFormatterTests
         Assert.Contains("Weekly reset", english);
         Assert.DoesNotContain("重置", english);
     }
+
+    [Fact]
+    public void AddsDailyTokenUsageToTheQuotaTooltipInTheConfiguredLanguage()
+    {
+        var quota = new AntigravityDisplayQuota("Pro", 75, null, 90, null, []);
+        var summary = new AntigravityTokenUsageSummary(3_450_039, 500_000);
+
+        var chinese = AntigravityUsageDisplayFormatter.FormatTooltipDetails(
+            quota,
+            DateTimeOffset.UtcNow,
+            english: false,
+            tokenUsage: summary);
+        var english = AntigravityUsageDisplayFormatter.FormatTooltipDetails(
+            quota,
+            DateTimeOffset.UtcNow,
+            english: true,
+            tokenUsage: summary);
+
+        Assert.Contains("今日 token：3.5M", chinese);
+        Assert.Contains("昨日 token：0.5M", chinese);
+        Assert.Contains("Today tokens: 3.5M", english);
+        Assert.Contains("Yesterday tokens: 0.5M", english);
+    }
 }
