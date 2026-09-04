@@ -23,23 +23,19 @@ public partial class MainWindow : Window
 {
     private const double BallWindowSize = 68;
     private const double WaterBallSize = 62;
-    private static readonly TimeSpan LocalRefreshDebounce = TimeSpan.FromMilliseconds(400);
     internal const double SettingsWindowWidth = 500;
     internal const double SettingsWindowHeight = 560;
     private const double SettingsWindowGap = 12;
-    private const string OfficialUsageUrl = "https://chatgpt.com";
     private const string StartupValueName = "AntigravityUsageWidget";
 
     private readonly SettingsStore settingsStore = new();
     private readonly WaterBallControl waterBall = new();
     private readonly System.Windows.Controls.TextBlock ballDetailsText = CreateDetailsTextBlock();
     private readonly System.Windows.Controls.TextBlock hostDetailsText = CreateDetailsTextBlock();
-    private readonly UsageRefreshService refreshService;
+    private readonly AntigravityUsageRefreshService refreshService;
     private readonly DispatcherTimer refreshTimer;
-    private readonly DispatcherTimer localRefreshTimer;
     private readonly DispatcherTimer resetCountdownTimer;
     private readonly DispatcherTimer officialRetryTimer;
-    private readonly UsageFileWatcher usageFileWatcher;
     private readonly UserActivityMonitor userActivityMonitor = new();
     private Forms.NotifyIcon trayIcon = null!;
     private Forms.ToolStripMenuItem traySettingsMenuItem = null!;
@@ -64,7 +60,7 @@ public partial class MainWindow : Window
         waterBall.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
         waterBall.VerticalAlignment = VerticalAlignment.Center;
         waterBall.SnapsToDevicePixels = true;
-        AutomationProperties.SetName(waterBall, "Codex 剩余用量");
+        AutomationProperties.SetName(waterBall, "Antigravity 剩余配额");
         ToolTipService.SetInitialShowDelay(waterBall, 150);
         ToolTipService.SetShowDuration(waterBall, 60000);
         ToolTipService.SetBetweenShowDelay(waterBall, 100);
@@ -73,15 +69,9 @@ public partial class MainWindow : Window
         WaterBallHost.Children.Add(waterBall);
         settings = settingsStore.Load();
         ApplyWeeklyRingSettings();
-        var dataPaths = CodexDataPaths.ForCurrentUser();
-        refreshService = CreateRefreshService(dataPaths);
+        refreshService = CreateRefreshService();
         refreshTimer = new DispatcherTimer();
         refreshTimer.Tick += RefreshTimer_Tick;
-        localRefreshTimer = new DispatcherTimer
-        {
-            Interval = LocalRefreshDebounce
-        };
-        localRefreshTimer.Tick += LocalRefreshTimer_Tick;
         resetCountdownTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(30)
@@ -92,22 +82,16 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(5)
         };
         officialRetryTimer.Tick += OfficialRetryTimer_Tick;
-        usageFileWatcher = new UsageFileWatcher(dataPaths);
-        usageFileWatcher.Changed += UsageFileWatcher_Changed;
         ConfigureWindow();
         ConfigureTrayIcon();
         ApplyLanguage();
     }
 
-    internal static UsageRefreshService CreateRefreshService(
-        CodexDataPaths dataPaths,
-        Func<OfficialUsageSnapshot?>? readOfficialUsage = null)
+    internal static AntigravityUsageRefreshService CreateRefreshService(
+        Func<AntigravityQuotaSnapshot?>? readOfficialUsage = null)
     {
-        var apiReader = new OfficialUsageApiReader();
-        return new UsageRefreshService(
-            new CodexDataReader(),
-            dataPaths,
-            readOfficialUsage ?? apiReader.ReadUsage);
+        var reader = new AntigravityStatusReader();
+        return new AntigravityUsageRefreshService(readOfficialUsage ?? reader.ReadUsage);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -122,10 +106,8 @@ public partial class MainWindow : Window
     private void Window_Closed(object? sender, EventArgs e)
     {
         refreshTimer.Stop();
-        localRefreshTimer.Stop();
         resetCountdownTimer.Stop();
         officialRetryTimer.Stop();
-        usageFileWatcher.Dispose();
         var savedPosition = dashboardPosition ?? new System.Windows.Point(Left, Top);
         settingsStore.Save(settings with { Left = savedPosition.X, Top = savedPosition.Y });
         trayIcon.Visible = false;
@@ -216,21 +198,6 @@ public partial class MainWindow : Window
         RefreshAsync(refreshOfficial: true);
     }
 
-    private void UsageFileWatcher_Changed(object? sender, EventArgs e)
-    {
-        Dispatcher.BeginInvoke(() =>
-        {
-            localRefreshTimer.Stop();
-            localRefreshTimer.Start();
-        });
-    }
-
-    private void LocalRefreshTimer_Tick(object? sender, EventArgs e)
-    {
-        localRefreshTimer.Stop();
-        RefreshAsync(refreshOfficial: false);
-    }
-
     private async void RefreshAsync(bool refreshOfficial = false)
     {
         if (isRefreshing)
@@ -253,7 +220,6 @@ public partial class MainWindow : Window
         {
             var snapshot = await Task.Run(() => refreshService.Refresh(
                 DateTimeOffset.UtcNow,
-                settings,
                 refreshOfficial));
             ApplySnapshot(snapshot);
         }
@@ -277,24 +243,19 @@ public partial class MainWindow : Window
     private void ApplySnapshot(WidgetViewState state)
     {
         lastState = state;
-        var fiveHourText = WaterBallDisplay.FormatCenterText(state.FiveHourRemainingPercent);
-        var weeklyText = WaterBallDisplay.FormatCenterText(state.OfficialRemainingPercent);
         var centerPercent = state.FiveHourRemainingPercent ?? state.OfficialRemainingPercent;
         var centerText = WaterBallDisplay.FormatCenterText(centerPercent);
         waterBall.FiveHourRemainingPercent = state.FiveHourRemainingPercent;
         waterBall.WeeklyRemainingPercent = state.OfficialRemainingPercent;
         waterBall.RemainingPercent = centerPercent;
-        waterBall.TokensPerMinute = state.RecentTokensPerMinute;
+        waterBall.TokensPerMinute = 0;
         waterBall.CenterText = centerText;
-        SetDetails(UsageDisplayFormatter.FormatTooltipDetails(
-            fiveHourText,
-            weeklyText,
-            state.TodayTokens,
-            state.YesterdayTokens,
-            state.SevenDay.Usage.TotalTokens,
-            state.ThirtyDay.Usage.TotalTokens,
-            state.RefreshedAt,
-            english: WidgetLanguage.IsEnglish(settings.Language)));
+        SetDetails(state.Quota is { } quota
+            ? AntigravityUsageDisplayFormatter.FormatTooltipDetails(
+                quota,
+                state.RefreshedAt,
+                english: WidgetLanguage.IsEnglish(settings.Language))
+            : state.Status);
     }
 
     private void SetDetails(string details)
@@ -302,7 +263,7 @@ public partial class MainWindow : Window
         lastDetails = details;
         ApplyTooltipDetails(
             details,
-            UsageDisplayFormatter.FormatResetDetails(
+            AntigravityUsageDisplayFormatter.FormatResetDetails(
                 lastState?.FiveHourResetAt,
                 lastState?.WeeklyResetAt ?? lastState?.ResetAt,
                 DateTimeOffset.Now,
@@ -315,7 +276,7 @@ public partial class MainWindow : Window
         {
             ApplyTooltipDetails(
                 lastDetails,
-                UsageDisplayFormatter.FormatResetDetails(
+                AntigravityUsageDisplayFormatter.FormatResetDetails(
                     lastState?.FiveHourResetAt,
                     lastState?.WeeklyResetAt ?? lastState?.ResetAt,
                     DateTimeOffset.Now,
@@ -423,7 +384,7 @@ public partial class MainWindow : Window
         trayIcon = new Forms.NotifyIcon
         {
             Icon = applicationIcon ?? System.Drawing.SystemIcons.Application,
-            Text = "Codex 剩余用量",
+            Text = "Antigravity 剩余配额",
             Visible = true
         };
 
@@ -496,9 +457,7 @@ public partial class MainWindow : Window
         Height = SettingsWindowHeight;
         Left = settingsPosition.X;
         Top = settingsPosition.Y;
-        WeeklyBudgetBox.Text = settings.WeeklyBudgetConfigured
-            ? settings.WeeklyBudgetTokens.ToString(CultureInfo.InvariantCulture)
-            : string.Empty;
+        WeeklyBudgetBox.Text = "Antigravity language server";
         RefreshSecondsBox.Text = settings.RefreshSeconds.ToString(CultureInfo.InvariantCulture);
         OpacitySlider.Value = settings.Opacity * 100;
         TopmostBox.IsChecked = settings.Topmost;
@@ -531,11 +490,7 @@ public partial class MainWindow : Window
 
     private void SettingsSave_Click(object sender, RoutedEventArgs e)
     {
-        var budget = 0L;
-        var hasBudget = !string.IsNullOrWhiteSpace(WeeklyBudgetBox.Text);
-        if ((hasBudget &&
-            (!long.TryParse(WeeklyBudgetBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out budget) || budget <= 0)) ||
-            !int.TryParse(RefreshSecondsBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var refreshSeconds))
+        if (!int.TryParse(RefreshSecondsBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var refreshSeconds))
         {
             ShowLocalizedMessage(
                 "周额度和刷新间隔必须是有效数字。",
@@ -559,8 +514,6 @@ public partial class MainWindow : Window
 
         var newSettings = SettingsStore.Normalize(settings with
         {
-            WeeklyBudgetTokens = budget,
-            WeeklyBudgetConfigured = hasBudget,
             RefreshSeconds = refreshSeconds,
             Opacity = OpacitySlider.Value / 100,
             Topmost = TopmostBox.IsChecked == true,
@@ -705,7 +658,7 @@ public partial class MainWindow : Window
     private void ApplyLanguage()
     {
         var isEnglish = WidgetLanguage.IsEnglish(settings.Language);
-        Title = isEnglish ? "Codex Usage" : "Codex 剩余用量";
+        Title = isEnglish ? "Antigravity Quota" : "Antigravity 剩余配额";
 
         SettingsMenuItem.Header = isEnglish ? "Settings" : "设置";
         OfficialUsageMenuItem.Header = isEnglish ? "Open official usage" : "打开官方用量";
@@ -717,7 +670,7 @@ public partial class MainWindow : Window
             ? "Adjust refresh and ring appearance"
             : "调整数据刷新与外圈显示样式";
         DataRefreshSectionText.Text = isEnglish ? "Data and refresh" : "数据与刷新";
-        WeeklyBudgetLabel.Text = isEnglish ? "Weekly budget (optional)" : "周额度（可选 token）";
+        WeeklyBudgetLabel.Text = isEnglish ? "Quota source" : "配额来源";
         RefreshIntervalLabel.Text = isEnglish ? "Refresh interval (seconds)" : "刷新间隔（秒）";
         OpacityLabel.Text = isEnglish ? "Window opacity" : "窗口不透明度";
         RingStyleSectionText.Text = isEnglish ? "Ring style" : "外圈样式";
@@ -738,9 +691,10 @@ public partial class MainWindow : Window
         AutoStartBox.Content = isEnglish ? "Start with Windows" : "开机启动";
         CancelButton.Content = isEnglish ? "Cancel" : "取消";
         SaveButton.Content = isEnglish ? "Save settings" : "保存设置";
+        WeeklyBudgetBox.Text = "Antigravity language server";
         WeeklyBudgetBox.ToolTip = isEnglish
-            ? "Leave blank to avoid setting a manual weekly budget."
-            : "留空表示不手动设置周额度";
+            ? "Official quotas are read from the local Antigravity language server."
+            : "官方配额由本机 Antigravity language server 提供。";
         RefreshSecondsBox.ToolTip = isEnglish
             ? "Official usage query interval, from 10 to 600 seconds."
             : "官方用量查询间隔，范围 10–600 秒";
@@ -751,7 +705,7 @@ public partial class MainWindow : Window
             trayOfficialUsageMenuItem.Text = isEnglish ? "Open official usage" : "打开官方用量";
             trayLanguageMenuItem.Text = isEnglish ? "切换到中文" : "Switch to English";
             trayExitMenuItem.Text = isEnglish ? "Exit" : "退出";
-            trayIcon.Text = isEnglish ? "Codex Usage" : "Codex 剩余用量";
+            trayIcon.Text = isEnglish ? "Antigravity Quota" : "Antigravity 剩余配额";
         }
     }
 
@@ -791,12 +745,39 @@ public partial class MainWindow : Window
 
     private static void OpenOfficialUsage()
     {
+        foreach (var process in Process.GetProcessesByName("Antigravity"))
+        {
+            try
+            {
+                if (process.MainWindowHandle != IntPtr.Zero)
+                {
+                    ShowWindow(process.MainWindowHandle, 9);
+                    SetForegroundWindow(process.MainWindowHandle);
+                    return;
+                }
+            }
+            catch
+            {
+                // Continue with the installed executable fallback.
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+
         Process.Start(new ProcessStartInfo
         {
-            FileName = OfficialUsageUrl,
+            FileName = "antigravity.exe",
             UseShellExecute = true
         });
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr windowHandle, int command);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr windowHandle);
 
     private void OfficialUsage_Click(object sender, RoutedEventArgs e) => OpenOfficialUsage();
 

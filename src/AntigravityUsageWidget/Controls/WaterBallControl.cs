@@ -649,7 +649,7 @@ public sealed class WaterBallControl : FrameworkElement
         {
             return base.GetNameCore() is { Length: > 0 } name
                 ? name
-                : "Codex 剩余用量";
+                : "Antigravity 剩余配额";
         }
     }
 }

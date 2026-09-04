@@ -1,7 +1,7 @@
 <Window x:Class="AntigravityUsageWidget.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Codex 剩余用量"
+        Title="Antigravity 剩余配额"
         Width="68"
         Height="68"
         MinWidth="68"
@@ -151,13 +151,15 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="WeeklyBudgetLabel"
-                                   Text="周额度（可选 token）"
+                                   Text="配额来源"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
                         <TextBox x:Name="WeeklyBudgetBox"
                                  Grid.Column="1"
                                  Style="{StaticResource SettingsTextBoxStyle}"
-                                 ToolTip="留空表示不手动设置周额度" />
+                                 IsReadOnly="True"
+                                 Text="Antigravity language server"
+                                 ToolTip="官方配额由本机 Antigravity language server 提供" />
                         <TextBlock x:Name="RefreshIntervalLabel"
                                    Grid.Row="1"
                                    Text="刷新间隔（秒）"

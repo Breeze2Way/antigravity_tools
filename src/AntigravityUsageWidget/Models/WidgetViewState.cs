@@ -1,9 +1,8 @@
+using AntigravityUsageWidget.Services;
+
 namespace AntigravityUsageWidget.Models;
 
 public sealed record WidgetViewState(
-    UsageSnapshot FiveHour,
-    UsageSnapshot SevenDay,
-    UsageSnapshot ThirtyDay,
     DateTimeOffset RefreshedAt,
     string Status,
     bool IsEstimate,
@@ -16,4 +15,5 @@ public sealed record WidgetViewState(
     public double RecentTokensPerMinute { get; init; }
     public long TodayTokens { get; init; }
     public long YesterdayTokens { get; init; }
+    public AntigravityDisplayQuota? Quota { get; init; }
 }

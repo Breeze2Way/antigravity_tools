@@ -18,16 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.6" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="UIAutomationClient">
-      <HintPath>$(ProgramFiles)\dotnet\packs\Microsoft.WindowsDesktop.App.Ref\9.0.18\ref\net9.0\UIAutomationClient.dll</HintPath>
-    </Reference>
-    <Reference Include="UIAutomationTypes">
-      <HintPath>$(ProgramFiles)\dotnet\packs\Microsoft.WindowsDesktop.App.Ref\9.0.18\ref\net9.0\UIAutomationTypes.dll</HintPath>
-    </Reference>
+    <PackageReference Include="System.Management" Version="9.0.6" />
   </ItemGroup>
 
 </Project>
