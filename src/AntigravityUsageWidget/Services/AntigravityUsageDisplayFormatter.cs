@@ -12,27 +12,10 @@ public static class AntigravityUsageDisplayFormatter
     {
         var lines = new List<string>
         {
-            $"Antigravity {quota.PlanName ?? (english ? "plan unavailable" : "计划未知")}",
-            FormatAggregate("Short", "短周期", quota.ShortRemainingPercent, english),
-            FormatAggregate("Weekly", "周额度", quota.WeeklyRemainingPercent, english)
+            FormatAggregate("Weekly quota", "周额度", quota.WeeklyRemainingPercent, english),
+            FormatAggregate("5-hour quota", "五小时额度", quota.ShortRemainingPercent, english),
+            $"{(english ? "Updated" : "更新时间")}: {refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}"
         };
-
-        foreach (var group in quota.Rows.GroupBy(row => row.Group ?? (english ? "Models" : "模型")))
-        {
-            lines.Add(group.Key);
-            foreach (var row in group)
-            {
-                var period = row.Period switch
-                {
-                    AntigravityQuotaPeriod.Weekly => english ? "Weekly" : "周额度",
-                    AntigravityQuotaPeriod.Short => english ? "Short" : "短周期",
-                    _ => english ? "Quota" : "配额"
-                };
-                lines.Add($"  {row.Label}: {period} {FormatPercent(row.RemainingPercent)}");
-            }
-        }
-
-        lines.Add($"{(english ? "Updated" : "更新时间")}: {refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
         return string.Join(Environment.NewLine, lines);
     }
 
@@ -60,7 +43,7 @@ public static class AntigravityUsageDisplayFormatter
         bool english = false)
     {
         var details = new List<string>();
-        AddReset(details, shortResetAt, now, english, english ? "Short reset" : "短周期重置时间");
+        AddReset(details, shortResetAt, now, english, english ? "5-hour reset" : "五小时重置时间");
         AddReset(details, weeklyResetAt, now, english, english ? "Weekly reset" : "周重置时间");
         return details.Count == 0 ? null : string.Join(Environment.NewLine, details);
     }
