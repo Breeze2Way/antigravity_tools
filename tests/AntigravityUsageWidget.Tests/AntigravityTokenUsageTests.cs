@@ -47,10 +47,8 @@ public sealed class AntigravityTokenUsageTests
         var chinese = AntigravityUsageDisplayFormatter.FormatTokenUsage(summary, english: false);
         var english = AntigravityUsageDisplayFormatter.FormatTokenUsage(summary, english: true);
 
-        Assert.Contains("今日 token：3.5M", chinese);
-        Assert.Contains("昨日 token：0.5M", chinese);
-        Assert.Contains("Today tokens: 3.5M", english);
-        Assert.Contains("Yesterday tokens: 0.5M", english);
+        Assert.Contains("今日token:3.5M(昨日：0.5M)", chinese);
+        Assert.Contains("Today tokens:3.5M (Yesterday:0.5M)", english);
         Assert.DoesNotContain("Today", chinese);
         Assert.DoesNotContain("今日", english);
     }

@@ -9,13 +9,9 @@ public static class AntigravityUsageDisplayFormatter
         AntigravityTokenUsageSummary summary,
         bool english)
     {
-        var todayLabel = english ? "Today tokens" : "今日 token";
-        var yesterdayLabel = english ? "Yesterday tokens" : "昨日 token";
-        var separator = english ? ": " : "：";
-        return string.Join(
-            Environment.NewLine,
-            $"{todayLabel}{separator}{FormatTokensInMillions(summary.TodayTokens)}",
-            $"{yesterdayLabel}{separator}{FormatTokensInMillions(summary.YesterdayTokens)}");
+        return english
+            ? $"Today tokens:{FormatTokensInMillions(summary.TodayTokens)} (Yesterday:{FormatTokensInMillions(summary.YesterdayTokens)})"
+            : $"今日token:{FormatTokensInMillions(summary.TodayTokens)}(昨日：{FormatTokensInMillions(summary.YesterdayTokens)})";
     }
 
     public static string FormatTooltipDetails(
@@ -25,85 +21,88 @@ public static class AntigravityUsageDisplayFormatter
         AntigravityTokenUsageSummary? tokenUsage = null)
     {
         var lines = new List<string>();
+        if (tokenUsage is not null)
+        {
+            lines.Add(FormatTokenUsage(tokenUsage, english));
+        }
+
         var groups = quota.Rows
             .GroupBy(row => row.Group ?? string.Empty, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         if (groups.Count == 0)
         {
-            lines.Add(FormatAggregate("Weekly quota", "周额度", quota.WeeklyRemainingPercent, english));
-            lines.Add(FormatAggregate("5-hour quota", "五小时额度", quota.ShortRemainingPercent, english));
+            lines.Add(FormatGroupQuotaLine(
+                english ? "Models" : "模型",
+                quota.Rows,
+                quota.ShortRemainingPercent,
+                quota.WeeklyRemainingPercent,
+                english));
         }
         else
         {
             foreach (var group in groups)
             {
-                lines.Add(FormatGroupName(group.Key, english));
-                lines.Add(FormatGroupQuota(group, AntigravityQuotaPeriod.Weekly, english));
-                lines.Add(FormatGroupQuota(group, AntigravityQuotaPeriod.Short, english));
+                lines.Add(FormatGroupQuotaLine(
+                    FormatGroupName(group.Key, english),
+                    group,
+                    null,
+                    null,
+                    english));
             }
         }
 
-        if (tokenUsage is not null)
-        {
-            lines.Add(FormatTokenUsage(tokenUsage, english));
-        }
-
-        lines.Add($"{(english ? "Updated" : "更新时间")}: {refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+        lines.Add(string.Empty);
+        lines.Add($"{(english ? "Updated" : "更新时间")}:{refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
         return string.Join(Environment.NewLine, lines);
     }
 
     private static string FormatGroupName(string group, bool english)
     {
-        if (english)
+        if (group.Contains("Gemini", StringComparison.OrdinalIgnoreCase))
         {
-            return group switch
-            {
-                var value when value.Equals("Gemini Models", StringComparison.OrdinalIgnoreCase)
-                    => "Gemini models",
-                var value when value.Equals("Claude and GPT models", StringComparison.OrdinalIgnoreCase)
-                    => "Claude and GPT models",
-                _ => string.IsNullOrWhiteSpace(group) ? "Models" : group
-            };
+            return "Gemini";
         }
 
-        return group switch
+        if (group.Contains("Claude", StringComparison.OrdinalIgnoreCase) ||
+            group.Contains("GPT", StringComparison.OrdinalIgnoreCase))
         {
-            var value when value.Equals("Gemini Models", StringComparison.OrdinalIgnoreCase)
-                => "Gemini 模型",
-            var value when value.Equals("Claude and GPT models", StringComparison.OrdinalIgnoreCase)
-                => "Claude/GPT 模型",
-            _ => "模型组"
-        };
+            return "Claude";
+        }
+
+        return string.IsNullOrWhiteSpace(group)
+            ? english ? "Models" : "模型"
+            : group.Trim();
     }
 
-    private static string FormatGroupQuota(
+    private static string FormatGroupQuotaLine(
+        string groupName,
         IEnumerable<AntigravityQuotaRow> rows,
-        AntigravityQuotaPeriod period,
+        double? fallbackShortPercent,
+        double? fallbackWeeklyPercent,
         bool english)
     {
-        var row = rows
-            .Where(candidate => candidate.Period == period)
-            .OrderBy(candidate => candidate.RemainingPercent)
-            .FirstOrDefault();
-        var label = period == AntigravityQuotaPeriod.Weekly
-            ? english ? "Weekly quota" : "周额度"
-            : english ? "5-hour quota" : "五小时额度";
-        return row is null
-            ? $"  {label}: {(english ? "unavailable" : "不可用")}"
-            : $"  {label}: {FormatPercent(row.RemainingPercent)}";
+        var shortPercent = rows
+            .Where(candidate => candidate.Period == AntigravityQuotaPeriod.Short)
+            .Select(candidate => (double?)candidate.RemainingPercent)
+            .OrderBy(value => value)
+            .FirstOrDefault() ?? fallbackShortPercent;
+        var weeklyPercent = rows
+            .Where(candidate => candidate.Period == AntigravityQuotaPeriod.Weekly)
+            .Select(candidate => (double?)candidate.RemainingPercent)
+            .OrderBy(value => value)
+            .FirstOrDefault() ?? fallbackWeeklyPercent;
+        var shortLabel = "5h";
+        var weeklyLabel = english ? "Weekly" : "周";
+        return $"{groupName} : [{shortLabel}:{FormatPercentOrUnavailable(shortPercent, english)}] " +
+               $"[{weeklyLabel}:{FormatPercentOrUnavailable(weeklyPercent, english)}]";
     }
 
-    private static string FormatAggregate(
-        string englishLabel,
-        string chineseLabel,
-        double? remainingPercent,
-        bool english)
+    private static string FormatPercentOrUnavailable(double? value, bool english)
     {
-        var label = english ? englishLabel : chineseLabel;
-        return remainingPercent.HasValue
-            ? $"{label}: {FormatPercent(remainingPercent.Value)}"
-            : $"{label}: {(english ? "unavailable" : "不可用")}";
+        return value.HasValue
+            ? FormatPercent(value.Value)
+            : english ? "unavailable" : "不可用";
     }
 
     private static string FormatPercent(double value)
@@ -144,6 +143,6 @@ public static class AntigravityUsageDisplayFormatter
         var hours = remainingHours.ToString("0", CultureInfo.InvariantCulture);
         details.Add(english
             ? $"{label}: {resetAt.Value.ToLocalTime():yyyy-MM-dd HH:mm} [{hours}h remaining]"
-            : $"{label}：{resetAt.Value.ToLocalTime():yyyy-MM-dd HH:mm} [剩余 {hours}h]");
+            : $"{label}:{resetAt.Value.ToLocalTime():yyyy-MM-dd HH:mm} [剩余 {hours}h]");
     }
 }
