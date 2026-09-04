@@ -3,6 +3,68 @@ namespace AntigravityUsageWidget.Tests;
 public sealed class AntigravityUsageDisplayFormatterTests
 {
     [Fact]
+    public void ShowsBothPeriodsForEachModelGroupInChinese()
+    {
+        var quota = new AntigravityDisplayQuota(
+            "Pro",
+            67,
+            null,
+            94.5,
+            null,
+            [
+                new("Five Hour Limit Remaining", "Gemini Models", 67, null, AntigravityQuotaPeriod.Short),
+                new("Weekly Limit Remaining", "Gemini Models", 94.5, null, AntigravityQuotaPeriod.Weekly),
+                new("Five Hour Limit Remaining", "Claude and GPT models", 100, null, AntigravityQuotaPeriod.Short),
+                new("Weekly Limit Remaining", "Claude and GPT models", 100, null, AntigravityQuotaPeriod.Weekly)
+            ]);
+
+        var details = AntigravityUsageDisplayFormatter.FormatTooltipDetails(
+            quota,
+            DateTimeOffset.UtcNow,
+            english: false);
+
+        Assert.Contains("Gemini 模型", details);
+        Assert.Contains("  周额度: 94.5%", details);
+        Assert.Contains("  五小时额度: 67%", details);
+        Assert.Contains("Claude/GPT 模型", details);
+        Assert.Contains("  周额度: 100%", details);
+        Assert.Contains("  五小时额度: 100%", details);
+        Assert.DoesNotContain("Gemini Models", details);
+        Assert.DoesNotContain("Weekly quota", details);
+    }
+
+    [Fact]
+    public void ShowsBothPeriodsForEachModelGroupInEnglish()
+    {
+        var quota = new AntigravityDisplayQuota(
+            "Pro",
+            67,
+            null,
+            94.5,
+            null,
+            [
+                new("Five Hour Limit Remaining", "Gemini Models", 67, null, AntigravityQuotaPeriod.Short),
+                new("Weekly Limit Remaining", "Gemini Models", 94.5, null, AntigravityQuotaPeriod.Weekly),
+                new("Five Hour Limit Remaining", "Claude and GPT models", 100, null, AntigravityQuotaPeriod.Short),
+                new("Weekly Limit Remaining", "Claude and GPT models", 100, null, AntigravityQuotaPeriod.Weekly)
+            ]);
+
+        var details = AntigravityUsageDisplayFormatter.FormatTooltipDetails(
+            quota,
+            DateTimeOffset.UtcNow,
+            english: true);
+
+        Assert.Contains("Gemini models", details);
+        Assert.Contains("  Weekly quota: 94.5%", details);
+        Assert.Contains("  5-hour quota: 67%", details);
+        Assert.Contains("Claude and GPT models", details);
+        Assert.Contains("  Weekly quota: 100%", details);
+        Assert.Contains("  5-hour quota: 100%", details);
+        Assert.DoesNotContain("周额度", details);
+        Assert.DoesNotContain("五小时额度", details);
+    }
+
+    [Fact]
     public void ShowsOnlyChineseQuotaSummariesWithoutRawApiLabels()
     {
         var quota = new AntigravityDisplayQuota(
@@ -37,7 +99,10 @@ public sealed class AntigravityUsageDisplayFormatterTests
             null,
             94.49,
             null,
-            [new("Five Hour Limit Remaining", "Gemini Models", 66.95, null, AntigravityQuotaPeriod.Short)]);
+            [
+                new("Five Hour Limit Remaining", "Gemini Models", 66.95, null, AntigravityQuotaPeriod.Short),
+                new("Weekly Limit Remaining", "Gemini Models", 94.49, null, AntigravityQuotaPeriod.Weekly)
+            ]);
 
         var details = AntigravityUsageDisplayFormatter.FormatTooltipDetails(
             quota,
@@ -84,7 +149,7 @@ public sealed class AntigravityUsageDisplayFormatterTests
             null,
             null,
             null,
-            [new("Gemini", null, 50, null, AntigravityQuotaPeriod.Short)]);
+            [new("Gemini", "Gemini Models", 50, null, AntigravityQuotaPeriod.Short)]);
 
         var details = AntigravityUsageDisplayFormatter.FormatTooltipDetails(
             quota,
