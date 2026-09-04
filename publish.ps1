@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 dotnet publish `
-    'src\CodexUsageWidget\CodexUsageWidget.csproj' `
+    'src\AntigravityUsageWidget\AntigravityUsageWidget.csproj' `
     -c Release `
     -r win-x64 `
     --self-contained false `

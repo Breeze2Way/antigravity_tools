@@ -1,4 +1,4 @@
-# Codex Usage Widget / Codex 用量悬浮球
+# Antigravity Usage Widget / Codex 用量悬浮球
 
 A compact Windows floating widget that visualizes Codex five-hour and weekly remaining percentages as a liquid neon energy ball.
 
@@ -62,10 +62,10 @@ The animation uses an adaptive background-priority timer instead of repainting o
 ## Build and Run / 构建与运行
 
 ```powershell
-dotnet test tests\CodexUsageWidget.Tests\CodexUsageWidget.Tests.csproj
-dotnet build src\CodexUsageWidget\CodexUsageWidget.csproj -c Release
+dotnet test tests\AntigravityUsageWidget.Tests\AntigravityUsageWidget.Tests.csproj
+dotnet build src\AntigravityUsageWidget\AntigravityUsageWidget.csproj -c Release
 .\publish.ps1
-.\publish\CodexUsageWidget.exe
+.\publish\AntigravityUsageWidget.exe
 ```
 
 ## Data and Privacy / 数据与隐私
@@ -84,8 +84,8 @@ Authentication data is never displayed, logged, or uploaded. The widget does not
 
 ## Project Structure / 项目结构
 
-- `src/CodexUsageWidget`: desktop application / 桌面程序
-- `tests/CodexUsageWidget.Tests`: automated tests / 自动化测试
+- `src/AntigravityUsageWidget`: desktop application / 桌面程序
+- `tests/AntigravityUsageWidget.Tests`: automated tests / 自动化测试
 - `publish.ps1`: publish script / 发布脚本
 
 ## Releases / 发布版本
