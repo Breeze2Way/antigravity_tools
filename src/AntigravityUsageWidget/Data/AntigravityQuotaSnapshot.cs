@@ -12,9 +12,16 @@ public sealed record AntigravityQuotaRow(
     string? Group,
     double RemainingPercent,
     DateTimeOffset? ResetAt,
-    AntigravityQuotaPeriod Period);
+    AntigravityQuotaPeriod Period)
+{
+    public string? ModelId { get; init; }
+}
 
 public sealed record AntigravityQuotaSnapshot(
     string? PlanName,
     IReadOnlyList<AntigravityQuotaRow> Rows,
-    DateTimeOffset RetrievedAt);
+    DateTimeOffset RetrievedAt)
+{
+    public string? SelectedModelId { get; init; }
+    public string? SelectedModelLabel { get; init; }
+}

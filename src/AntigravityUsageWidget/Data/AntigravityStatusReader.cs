@@ -39,19 +39,29 @@ public sealed class AntigravityStatusReader
                 continue;
             }
 
-            foreach (var method in new[]
-                     {
-                         "RetrieveUserQuotaSummary",
-                         "GetUserStatus",
-                         "GetCommandModelConfigs"
-                     })
+            var summary = AntigravityQuotaParser.Parse(
+                Post(baseUri, "RetrieveUserQuotaSummary", server.CsrfToken));
+            var userStatus = AntigravityQuotaParser.Parse(
+                Post(baseUri, "GetUserStatus", server.CsrfToken));
+            if (summary is not null)
             {
-                var response = Post(baseUri, method, server.CsrfToken);
-                var snapshot = AntigravityQuotaParser.Parse(response);
-                if (snapshot is not null)
+                return summary with
                 {
-                    return snapshot;
-                }
+                    SelectedModelId = userStatus?.SelectedModelId ?? summary.SelectedModelId,
+                    SelectedModelLabel = userStatus?.SelectedModelLabel ?? summary.SelectedModelLabel
+                };
+            }
+
+            if (userStatus is not null)
+            {
+                return userStatus;
+            }
+
+            var modelConfigs = AntigravityQuotaParser.Parse(
+                Post(baseUri, "GetCommandModelConfigs", server.CsrfToken));
+            if (modelConfigs is not null)
+            {
+                return modelConfigs;
             }
         }
 

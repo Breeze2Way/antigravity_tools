@@ -17,6 +17,8 @@ public static class AntigravityQuotaParser
             using var document = JsonDocument.Parse(json);
             var root = document.RootElement;
             var planName = TryReadPlanName(root);
+            var selectedModelId = TryReadSelectedModelId(root);
+            var selectedModelLabel = TryReadSelectedModelLabel(root, selectedModelId);
             var rows = new List<AntigravityQuotaRow>();
 
             if (root.TryGetProperty("response", out var response) &&
@@ -37,9 +39,16 @@ public static class AntigravityQuotaParser
                 .GroupBy(row => $"{row.Group}\u001f{row.Label}\u001f{row.Period}", StringComparer.Ordinal)
                 .Select(group => group.First())
                 .ToList();
-            return rows.Count == 0
-                ? null
-                : new AntigravityQuotaSnapshot(planName, rows, DateTimeOffset.UtcNow);
+            if (rows.Count == 0)
+            {
+                return null;
+            }
+
+            return new AntigravityQuotaSnapshot(planName, rows, DateTimeOffset.UtcNow)
+            {
+                SelectedModelId = selectedModelId,
+                SelectedModelLabel = selectedModelLabel
+            };
         }
         catch (JsonException)
         {
@@ -126,8 +135,69 @@ public static class AntigravityQuotaParser
                 null,
                 remainingPercent,
                 TryReadDateTimeOffset(quotaInfo, "resetTime"),
-                GetPeriod(label)));
+                GetPeriod(label))
+            {
+                ModelId = TryReadModelId(config)
+            });
         }
+    }
+
+    private static string? TryReadSelectedModelId(JsonElement root)
+    {
+        if (!root.TryGetProperty("userStatus", out var userStatus) ||
+            userStatus.ValueKind != JsonValueKind.Object ||
+            !userStatus.TryGetProperty("cascadeModelConfigData", out var configData) ||
+            configData.ValueKind != JsonValueKind.Object ||
+            !configData.TryGetProperty("defaultOverrideModelConfig", out var selectedConfig) ||
+            selectedConfig.ValueKind != JsonValueKind.Object ||
+            !selectedConfig.TryGetProperty("modelOrAlias", out var modelOrAlias) ||
+            modelOrAlias.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        return TryGetString(modelOrAlias, "model");
+    }
+
+    private static string? TryReadSelectedModelLabel(JsonElement root, string? selectedModelId)
+    {
+        if (string.IsNullOrWhiteSpace(selectedModelId) ||
+            !root.TryGetProperty("userStatus", out var userStatus) ||
+            !userStatus.TryGetProperty("cascadeModelConfigData", out var configData) ||
+            !configData.TryGetProperty("clientModelConfigs", out var configs) ||
+            configs.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        foreach (var config in configs.EnumerateArray())
+        {
+            if (string.Equals(TryReadModelId(config), selectedModelId, StringComparison.Ordinal) &&
+                !string.IsNullOrWhiteSpace(TryGetString(config, "label")))
+            {
+                return TryGetString(config, "label");
+            }
+        }
+
+        return null;
+    }
+
+    private static string? TryReadModelId(JsonElement config)
+    {
+        if (config.TryGetProperty("modelOrAlias", out var modelOrAlias) &&
+            modelOrAlias.ValueKind == JsonValueKind.Object)
+        {
+            var model = TryGetString(modelOrAlias, "model");
+            if (!string.IsNullOrWhiteSpace(model))
+            {
+                return model;
+            }
+        }
+
+        return config.TryGetProperty("modelId", out var modelId) &&
+            modelId.ValueKind == JsonValueKind.String
+            ? modelId.GetString()
+            : null;
     }
 
     private static string? TryReadPlanName(JsonElement root)

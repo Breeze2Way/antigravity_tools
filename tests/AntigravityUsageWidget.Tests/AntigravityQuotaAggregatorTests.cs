@@ -36,4 +36,27 @@ public sealed class AntigravityQuotaAggregatorTests
         Assert.Equal(50, result.ShortRemainingPercent!.Value);
         Assert.Null(result.WeeklyRemainingPercent);
     }
+
+    [Fact]
+    public void UsesTheCurrentModelsGroupInsteadOfTheLowestOtherGroup()
+    {
+        var snapshot = new AntigravityQuotaSnapshot(
+            "Pro",
+            [
+                new("Gemini", "Gemini Models", 66.95, null, AntigravityQuotaPeriod.Short),
+                new("Claude", "Claude and GPT models", 10, null, AntigravityQuotaPeriod.Short),
+                new("Gemini", "Gemini Models", 94.49, null, AntigravityQuotaPeriod.Weekly),
+                new("Claude", "Claude and GPT models", 20, null, AntigravityQuotaPeriod.Weekly)
+            ],
+            DateTimeOffset.UtcNow)
+        {
+            SelectedModelId = "MODEL_PLACEHOLDER_M318",
+            SelectedModelLabel = "Gemini 3.8 Flash (High)"
+        };
+
+        var result = AntigravityQuotaAggregator.Aggregate(snapshot);
+
+        Assert.Equal(66.95, result.ShortRemainingPercent!.Value, precision: 6);
+        Assert.Equal(94.49, result.WeeklyRemainingPercent!.Value, precision: 6);
+    }
 }

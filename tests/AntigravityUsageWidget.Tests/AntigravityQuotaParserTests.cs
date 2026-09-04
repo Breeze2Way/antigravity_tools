@@ -69,6 +69,37 @@ public sealed class AntigravityQuotaParserTests
     }
 
     [Fact]
+    public void ParsesTheSelectedModelFromUserStatus()
+    {
+        const string json = """
+        {
+          "userStatus": {
+            "cascadeModelConfigData": {
+              "defaultOverrideModelConfig": {
+                "modelOrAlias": { "model": "MODEL_PLACEHOLDER_M318" }
+              },
+              "clientModelConfigs": [
+                {
+                  "label": "Gemini 3.8 Flash (High)",
+                  "modelOrAlias": { "model": "MODEL_PLACEHOLDER_M318" },
+                  "modelId": "gemini-3.8-flash-high",
+                  "quotaInfo": { "remainingFraction": 0.8 }
+                }
+              ]
+            }
+          }
+        }
+        """;
+
+        var snapshot = AntigravityQuotaParser.Parse(json);
+
+        Assert.NotNull(snapshot);
+        Assert.Equal("MODEL_PLACEHOLDER_M318", snapshot!.SelectedModelId);
+        Assert.Equal("Gemini 3.8 Flash (High)", snapshot.SelectedModelLabel);
+        Assert.Equal("MODEL_PLACEHOLDER_M318", snapshot.Rows[0].ModelId);
+    }
+
+    [Fact]
     public void SkipsInvalidRowsAndReturnsNullWhenNothingIsUsable()
     {
         const string json = """
