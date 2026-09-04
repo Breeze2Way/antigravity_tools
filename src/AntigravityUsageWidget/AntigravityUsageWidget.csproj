@@ -14,7 +14,7 @@
   <ItemGroup>
     <Content Include="悬浮球.ico"
              CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest" />
+             CopyToPublishDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
