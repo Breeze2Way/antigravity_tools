@@ -8,7 +8,9 @@ public sealed class AntigravityTokenUsageTests
         var metadata = ProtobufFixture.Metadata(
             timestamp: new DateTimeOffset(2026, 9, 4, 10, 30, 0, TimeSpan.FromHours(8)),
             inputTokens: 1_250_000,
-            outputTokens: 250_000);
+            outputTokens: 250_000,
+            cacheReadTokens: 10_000_000,
+            cacheWriteTokens: 250_000);
 
         var usage = AntigravityTokenUsageMetadataParser.Parse(metadata);
 
@@ -16,7 +18,9 @@ public sealed class AntigravityTokenUsageTests
         Assert.Equal(new DateTimeOffset(2026, 9, 4, 2, 30, 0, TimeSpan.Zero), usage.Timestamp);
         Assert.Equal(1_250_000, usage.InputTokens);
         Assert.Equal(250_000, usage.OutputTokens);
-        Assert.Equal(1_500_000, usage.TotalTokens);
+        Assert.Equal(10_000_000, usage.CacheReadTokens);
+        Assert.Equal(250_000, usage.CacheWriteTokens);
+        Assert.Equal(11_750_000, usage.TotalTokens);
     }
 
     [Fact]
@@ -105,7 +109,12 @@ public sealed class AntigravityTokenUsageTests
 
     private static class ProtobufFixture
     {
-        public static byte[] Metadata(DateTimeOffset timestamp, long inputTokens, long outputTokens)
+        public static byte[] Metadata(
+            DateTimeOffset timestamp,
+            long inputTokens,
+            long outputTokens,
+            long cacheReadTokens = 0,
+            long cacheWriteTokens = 0)
         {
             var timestampMessage = Message(
                 VarintField(1, timestamp.ToUnixTimeSeconds()),
@@ -113,7 +122,9 @@ public sealed class AntigravityTokenUsageTests
             var usageMessage = Message(
                 VarintField(1, 1319),
                 VarintField(2, inputTokens),
-                VarintField(3, outputTokens));
+                VarintField(3, outputTokens),
+                VarintField(4, cacheWriteTokens),
+                VarintField(5, cacheReadTokens));
             return Message(
                 BytesField(1, timestampMessage),
                 BytesField(9, usageMessage));

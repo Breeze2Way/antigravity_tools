@@ -3,9 +3,11 @@ namespace AntigravityUsageWidget.Data;
 public sealed record AntigravityTokenUsageRecord(
     DateTimeOffset Timestamp,
     long InputTokens,
-    long OutputTokens)
+    long OutputTokens,
+    long CacheReadTokens = 0,
+    long CacheWriteTokens = 0)
 {
-    public long TotalTokens => InputTokens + OutputTokens;
+    public long TotalTokens => InputTokens + OutputTokens + CacheReadTokens + CacheWriteTokens;
 }
 
 public sealed record AntigravityTokenUsageSummary(
@@ -32,8 +34,12 @@ public static class AntigravityTokenUsageMetadataParser
             var usageFields = ProtobufReader.ReadFields(modelUsagePayload);
             var inputTokens = GetVarint(usageFields, 2);
             var outputTokens = GetVarint(usageFields, 3);
+            var cacheWriteTokens = GetVarint(usageFields, 4) ?? 0;
+            var cacheReadTokens = GetVarint(usageFields, 5) ?? 0;
             if (!seconds.HasValue || !inputTokens.HasValue || !outputTokens.HasValue ||
-                inputTokens.Value < 0 || outputTokens.Value < 0 || nanos < 0 || nanos >= 1_000_000_000)
+                inputTokens.Value < 0 || outputTokens.Value < 0 ||
+                cacheReadTokens < 0 || cacheWriteTokens < 0 ||
+                nanos < 0 || nanos >= 1_000_000_000)
             {
                 return null;
             }
@@ -41,7 +47,9 @@ public static class AntigravityTokenUsageMetadataParser
             return new AntigravityTokenUsageRecord(
                 DateTimeOffset.FromUnixTimeSeconds(seconds.Value).AddTicks(nanos / 100),
                 inputTokens.Value,
-                outputTokens.Value);
+                outputTokens.Value,
+                cacheReadTokens,
+                cacheWriteTokens);
         }
         catch (ArgumentException)
         {
